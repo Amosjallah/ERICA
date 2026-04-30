@@ -27,7 +27,7 @@ async function seed() {
   const admin = await prisma.user.create({
     data: {
       name: 'Admin User',
-      email: 'admin@ericah.market',
+      email: 'admin@ktu-emarket.local',
       password: await hash('Admin123!'),
       role: 'admin',
     },
@@ -36,16 +36,16 @@ async function seed() {
   const vendorUser = await prisma.user.create({
     data: {
       name: 'Luxe Goods Co.',
-      email: 'vendor@ericah.market',
+      email: 'vendor@ktu-emarket.local',
       password: await hash('Vendor123!'),
       role: 'vendor',
     },
   });
 
-  await prisma.user.create({
+  const customer = await prisma.user.create({
     data: {
       name: 'Jane Customer',
-      email: 'customer@ericah.market',
+      email: 'customer@ktu-emarket.local',
       password: await hash('Customer123!'),
       role: 'customer',
     },
@@ -140,7 +140,7 @@ async function seed() {
   console.log('Seed complete.');
   console.log('Admin:', admin.email, '/ Admin123!');
   console.log('Vendor:', vendorUser.email, '/ Vendor123!');
-  console.log('Customer:', 'customer@ericah.market', '/ Customer123!');
+  console.log('Customer:', customer.email, '/ Customer123!');
   console.log('Vendor slug:', vendor.slug);
 
   await prisma.$disconnect();

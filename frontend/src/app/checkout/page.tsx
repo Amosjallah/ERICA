@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
+import { SITE_NAME_SHORT } from "@/lib/site";
 
 export default function CheckoutPage() {
   const { user, token } = useAuth();
@@ -51,6 +52,7 @@ export default function CheckoutPage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-10">
       <h1 className="font-serif text-3xl font-semibold">Checkout</h1>
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Secure payment via Stripe on {SITE_NAME_SHORT}.</p>
       <p className="mt-2 text-sm text-zinc-500">
         Without a Stripe test key, the API completes orders in demo mode (no card required).
       </p>

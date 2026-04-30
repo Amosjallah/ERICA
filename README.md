@@ -1,4 +1,4 @@
-# Ericah Marketplace
+# KTU E-MARKET
 
 Full-stack multi-vendor marketplace: **Next.js + Tailwind** frontend, **Express + PostgreSQL (Supabase)** API via **Prisma**, **JWT** auth, **Stripe Checkout** (with **demo checkout** when Stripe keys are absent).
 
@@ -27,7 +27,7 @@ npm run dev
 ```
 
 - Default API: `http://localhost:5000`
-- Seed creates **admin**, **vendor**, and **customer** users (passwords printed in the terminal).
+- Seed creates **admin**, **vendor**, and **customer** users at `@ktu-emarket.local` (passwords printed in the terminal).
 - Uploads live under `backend/uploads/` and are served at `http://localhost:5000/uploads/...`.
 
 ### Environment (`backend/.env`)
@@ -71,7 +71,7 @@ A root `package.json` / `vercel.json` only helps local or custom CI builds; **Gi
 - **`NEXT_PUBLIC_API_URL`** — your **deployed** API base including `/api`, e.g. `https://your-api.onrender.com/api` (not localhost).
 - **`NEXT_PUBLIC_SITE_ORIGIN`** — usually the API origin without `/api`, for image URLs like `/uploads/...`.
 
-The Express API in **`backend/`** must run on another host (Railway, Render, Fly.io, etc.). Set **`CLIENT_URL`** on the API to your Vercel site URL (e.g. `https://erica-three-phi.vercel.app`) for CORS and Stripe redirects.
+The Express API in **`backend/`** must run on another host (Railway, Render, Fly.io, etc.). Set **`CLIENT_URL`** on the API to your Vercel site URL (for example your production frontend URL) for CORS and Stripe redirects.
 
 ## Payments
 
@@ -81,7 +81,7 @@ The Express API in **`backend/`** must run on another host (Railway, Render, Fly
 
 ## Roles & routes
 
-- **Customer:** browse, cart, checkout, orders, wishlist, reviews, messaging.
+- **Customer:** browse, cart, checkout, orders, wishlist, reviews, messaging, **`/shops`** (vendor directory + external marketplace links).
 - **Vendor:** dashboard, product CRUD (multipart images), order sub-status, analytics (pending approval blocks selling).
 - **Admin:** analytics, pending vendor approval, users, orders list.
 

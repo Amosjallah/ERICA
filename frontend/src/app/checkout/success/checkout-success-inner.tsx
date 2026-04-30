@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { apiFetch } from "@/lib/api";
+import { SITE_NAME_SHORT } from "@/lib/site";
 
 export default function CheckoutSuccessInner() {
   const params = useSearchParams();
@@ -17,7 +18,7 @@ export default function CheckoutSuccessInner() {
   useEffect(() => {
     if (!sessionId || !user || !token) {
       if (demo || orderNum) setMessage("Thank you! Your demo order was placed.");
-      else setMessage("Thank you for shopping with Ericah Marketplace.");
+      else setMessage(`Thank you for shopping with ${SITE_NAME_SHORT}.`);
       return;
     }
     apiFetch("/checkout/verify-session", {

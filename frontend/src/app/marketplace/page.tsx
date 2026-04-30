@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { ProductCard } from "@/components/product-card";
+import { SITE_NAME_SHORT } from "@/lib/site";
 
 const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -48,7 +50,10 @@ export default async function MarketplacePage({
         <div className="flex-1">
           <h1 className="font-serif text-3xl font-semibold text-zinc-900 dark:text-white">Marketplace</h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            {q ? `Results for “${q}”` : "Browse products from approved vendors."}
+            {q ? `Results for “${q}”` : `Browse products from approved vendors on ${SITE_NAME_SHORT}.`}{" "}
+            <Link href="/shops" className="font-medium text-amber-700 hover:underline dark:text-amber-400">
+              View all shops →
+            </Link>
           </p>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {products.map((p: never) => (

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SITE_NAME, SITE_NAME_SHORT } from "@/lib/site";
 
 /** Rotating hero imagery for category cards on the home page when API has no image. */
 export const HOME_CATEGORY_IMAGES = [
@@ -92,9 +93,9 @@ export function HomeHero() {
       <div className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-zinc-400/10 blur-3xl dark:bg-zinc-600/10" />
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:py-24 lg:grid-cols-2 lg:gap-16">
         <div className="max-w-xl animate-fade-in">
-          <p className="text-sm font-medium uppercase tracking-widest text-amber-700 dark:text-amber-400">
-            Ericah Marketplace
-          </p>
+            <p className="text-sm font-medium uppercase tracking-widest text-amber-700 dark:text-amber-400">
+              {SITE_NAME}
+            </p>
           <h1 className="font-serif mt-4 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl dark:text-white">
             Discover products from vendors you will love.
           </h1>
@@ -114,6 +115,12 @@ export function HomeHero() {
               className="rounded-lg border border-zinc-300 bg-white px-6 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
             >
               Start selling
+            </Link>
+            <Link
+              href="/shops"
+              className="rounded-lg border border-zinc-300 bg-white px-6 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+            >
+              All shops
             </Link>
             <Link
               href="/contact"
@@ -432,7 +439,7 @@ export function HomeVendorCta() {
           </div>
           <div className="flex flex-col justify-center px-8 py-12 lg:px-12">
             <p className="text-sm font-semibold uppercase tracking-widest text-amber-400">For vendors</p>
-            <h2 className="font-serif mt-3 text-3xl font-semibold text-white sm:text-4xl">Grow your audience on Ericah</h2>
+            <h2 className="font-serif mt-3 text-3xl font-semibold text-white sm:text-4xl">Grow your audience on {SITE_NAME_SHORT}</h2>
             <p className="mt-4 text-sm leading-relaxed text-zinc-300">
               List products with rich images, manage inventory, fulfill sub-orders, and chat with customers from one vendor
               dashboard—plus analytics when you are ready to scale.

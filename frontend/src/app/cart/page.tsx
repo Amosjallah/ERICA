@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
-import { apiFetch } from "@/lib/api";
-import { getPublicOrigin } from "@/lib/api";
+import { apiFetch, getPublicOrigin } from "@/lib/api";
+import { SITE_NAME_SHORT } from "@/lib/site";
 import Image from "next/image";
 
 type CartItem = {
@@ -72,6 +72,7 @@ export default function CartPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <h1 className="font-serif text-3xl font-semibold text-zinc-900 dark:text-white">Your cart</h1>
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Items from multiple vendors on {SITE_NAME_SHORT} ship as separate sub-orders.</p>
       <div className="mt-8 space-y-4">
         {items.map((line) => {
           const img = line.product.images?.[0];

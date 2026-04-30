@@ -55,7 +55,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/admin', adminRoutes);
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, name: 'Ericah Marketplace API' }));
+app.get('/api/health', (_req, res) => res.json({ ok: true, name: 'KTU E-MARKET API' }));
 
 app.use((err, _req, res, _next) => {
   console.error(err);

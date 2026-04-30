@@ -3,6 +3,7 @@
 import { useAuth } from "@/context/auth-context";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { SITE_NAME_SHORT } from "@/lib/site";
 
 type Analytics = {
   users: number;
@@ -51,6 +52,7 @@ export default function AdminDashboard() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="font-serif text-3xl font-semibold">Admin</h1>
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Platform overview for {SITE_NAME_SHORT}.</p>
       {data && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(

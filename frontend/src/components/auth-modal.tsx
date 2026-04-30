@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
+import { SITE_NAME } from "@/lib/site";
 
 export function AuthModalHost() {
   const params = useSearchParams();
@@ -114,6 +115,9 @@ export function AuthModalHost() {
           </form>
         ) : (
           <form onSubmit={handleRegister} className="space-y-3 p-5">
+            <p className="-mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Join {SITE_NAME} — browse campus shops or register as a vendor to sell here.
+            </p>
             <div className="flex gap-2 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
               <button
                 type="button"

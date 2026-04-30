@@ -8,6 +8,7 @@ import { useAuth } from "@/context/auth-context";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
 import clsx from "clsx";
+import { SITE_NAME } from "@/lib/site";
 
 export function Navbar() {
   const { user, logout, loading } = useAuth();
@@ -39,7 +40,8 @@ export function Navbar() {
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex items-center justify-between gap-4 sm:justify-start">
           <Link href="/" className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-white">
-            Ericah <span className="text-amber-600">Marketplace</span>
+            {SITE_NAME.split(" ")[0]}{" "}
+            <span className="text-amber-600">{SITE_NAME.split(" ").slice(1).join(" ")}</span>
           </Link>
           <button
             type="button"
@@ -78,8 +80,14 @@ export function Navbar() {
             {theme === "dark" ? "Light" : "Dark"}
           </button>
           <Link
+            href="/shops"
+            className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
+          >
+            Shops
+          </Link>
+          <Link
             href="/marketplace"
-            className="hidden text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white sm:inline"
+            className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
           >
             Shop
           </Link>

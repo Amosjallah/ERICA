@@ -6,6 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
 import { Suspense } from "react";
+import { SITE_NAME_SHORT } from "@/lib/site";
 
 type Msg = { _id: string; body: string; sender: { name?: string }; createdAt: string };
 
@@ -61,7 +62,10 @@ function MessagesInner() {
   if (!user) return <p className="px-4 py-12 text-center">Sign in to use messages.</p>;
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-10 lg:flex-row">
+    <div className="mx-auto max-w-5xl px-4 py-10">
+      <h1 className="font-serif text-3xl font-semibold text-zinc-900 dark:text-white">Messages</h1>
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Inbox on {SITE_NAME_SHORT}.</p>
+      <div className="mt-8 flex flex-col gap-6 lg:flex-row">
       <aside className="w-full shrink-0 lg:w-64">
         <p className="text-sm font-semibold">Conversations</p>
         <ul className="mt-3 space-y-2 text-sm">
@@ -119,6 +123,7 @@ function MessagesInner() {
           </button>
         </form>
       </div>
+    </div>
     </div>
   );
 }

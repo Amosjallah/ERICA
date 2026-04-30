@@ -205,7 +205,7 @@ router.post('/create-session', async (req, res) => {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `Ericah Marketplace — ${order.orderNumber}`,
+              name: `KTU E-MARKET — ${order.orderNumber}`,
             },
             unit_amount: amountCents,
           },

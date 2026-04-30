@@ -5,6 +5,7 @@ import { useAuth } from "@/context/auth-context";
 import { apiFetch } from "@/lib/api";
 import { ProductCard } from "@/components/product-card";
 import Link from "next/link";
+import { SITE_NAME_SHORT } from "@/lib/site";
 
 export default function WishlistPage() {
   const { user, token } = useAuth();
@@ -31,6 +32,7 @@ export default function WishlistPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <h1 className="font-serif text-3xl font-semibold">Wishlist</h1>
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Saved products on {SITE_NAME_SHORT}.</p>
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((p) => (
           <ProductCard key={(p as { _id: string })._id} product={p as never} />

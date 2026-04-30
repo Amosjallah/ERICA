@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { apiFetch, apiForm } from "@/lib/api";
 import { toast } from "sonner";
 import Link from "next/link";
+import { SITE_NAME_SHORT } from "@/lib/site";
 
 type Summary = {
   productCount: number;
@@ -58,9 +59,21 @@ export default function VendorDashboard() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="font-serif text-3xl font-semibold">Vendor dashboard</h1>
+      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Manage your storefront on {SITE_NAME_SHORT}.</p>
       {vendor && (
         <p className="mt-2 text-sm text-zinc-500">
           Store: {vendor.storeName} · {vendor.approvalStatus}
+        </p>
+      )}
+      {vendor?.slug && (
+        <p className="mt-1 text-sm">
+          <Link href={`/vendor/${vendor.slug}`} className="font-medium text-amber-700 hover:underline dark:text-amber-400">
+            View public shop
+          </Link>
+          <span className="mx-2 text-zinc-300 dark:text-zinc-600">·</span>
+          <Link href="/shops" className="text-zinc-600 hover:underline dark:text-zinc-400">
+            Shops directory
+          </Link>
         </p>
       )}
       {summary && (

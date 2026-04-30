@@ -69,7 +69,7 @@ router.patch('/vendors/:id', async (req, res) => {
       data: {
         userId: v.userId,
         title: 'Vendor approved',
-        body: `${v.storeName} is live on Ericah Marketplace.`,
+        body: `${v.storeName} is live on KTU E-MARKET.`,
         type: 'vendor',
       },
     });
