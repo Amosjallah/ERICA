@@ -1,10 +1,20 @@
 import jwt from 'jsonwebtoken';
-import { User } from '../models/User.js';
+import bcrypt from 'bcryptjs';
+import prisma from '../lib/prisma.js';
+import { sanitizeUser } from '../utils/legacy.js';
 
 export function signToken(userId) {
   return jwt.sign({ sub: userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
+}
+
+export async function hashPassword(plain) {
+  return bcrypt.hash(plain, 12);
+}
+
+export async function comparePassword(plain, hashed) {
+  return bcrypt.compare(plain, hashed);
 }
 
 export async function protect(req, res, next) {
@@ -16,9 +26,9 @@ export async function protect(req, res, next) {
       return res.status(401).json({ message: 'Not authorized, no token' });
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.sub).select('-password');
+    const user = await prisma.user.findUnique({ where: { id: decoded.sub } });
     if (!user) return res.status(401).json({ message: 'User not found' });
-    req.user = user;
+    req.user = sanitizeUser(user);
     next();
   } catch (e) {
     return res.status(401).json({ message: 'Not authorized, invalid token' });
@@ -31,8 +41,8 @@ export async function optionalAuth(req, res, next) {
   try {
     const token = auth.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.sub).select('-password');
-    if (user) req.user = user;
+    const user = await prisma.user.findUnique({ where: { id: decoded.sub } });
+    if (user) req.user = sanitizeUser(user);
   } catch {
     /* invalid token */
   }

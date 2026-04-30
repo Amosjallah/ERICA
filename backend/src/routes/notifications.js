@@ -1,30 +1,38 @@
 import express from 'express';
-import { Notification } from '../models/Notification.js';
+import prisma from '../lib/prisma.js';
 import { protect } from '../middleware/auth.js';
+import { toLegacy } from '../utils/legacy.js';
 
 const router = express.Router();
+
 router.use(protect);
 
 router.get('/', async (req, res) => {
-  const list = await Notification.find({ user: req.user._id })
-    .sort({ createdAt: -1 })
-    .limit(50)
-    .lean();
-  res.json(list);
+  const list = await prisma.notification.findMany({
+    where: { userId: req.user._id },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  });
+  res.json(list.map((n) => toLegacy(n)));
 });
 
 router.patch('/:id/read', async (req, res) => {
-  const n = await Notification.findOneAndUpdate(
-    { _id: req.params.id, user: req.user._id },
-    { read: true },
-    { new: true }
-  );
-  if (!n) return res.status(404).json({ message: 'Not found' });
-  res.json(n);
+  const existing = await prisma.notification.findFirst({
+    where: { id: req.params.id, userId: req.user._id },
+  });
+  if (!existing) return res.status(404).json({ message: 'Not found' });
+  const n = await prisma.notification.update({
+    where: { id: existing.id },
+    data: { read: true },
+  });
+  res.json(toLegacy(n));
 });
 
 router.post('/read-all', async (req, res) => {
-  await Notification.updateMany({ user: req.user._id }, { read: true });
+  await prisma.notification.updateMany({
+    where: { userId: req.user._id },
+    data: { read: true },
+  });
   res.json({ ok: true });
 });
 

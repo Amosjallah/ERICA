@@ -1,11 +1,10 @@
 import express from 'express';
-import mongoose from 'mongoose';
-import { Product } from '../models/Product.js';
-import { Category } from '../models/Category.js';
-import { Vendor } from '../models/Vendor.js';
+import prisma from '../lib/prisma.js';
+import { slugify } from '../utils/slugify.js';
 import { optionalAuth, protect, allowRoles } from '../middleware/auth.js';
 import { loadVendor, requireApprovedVendor } from '../middleware/vendor.js';
 import { upload } from '../middleware/upload.js';
+import { toLegacy } from '../utils/legacy.js';
 
 const router = express.Router();
 
@@ -22,81 +21,99 @@ router.get('/', optionalAuth, async (req, res) => {
     limit = 12,
   } = req.query;
 
-  const filter = { active: true };
+  const where = {
+    active: true,
+    vendor: { approvalStatus: 'approved' },
+  };
+
   if (category) {
-    const cat = await Category.findOne({
-      $or: [{ slug: category }, { _id: mongoose.isValidObjectId(category) ? category : null }],
+    const cat = await prisma.category.findFirst({
+      where: { OR: [{ slug: String(category) }, { id: String(category) }] },
     });
-    if (cat) filter.category = cat._id;
+    if (cat) where.categoryId = cat.id;
   }
   if (vendor) {
-    const vdoc = await Vendor.findOne({
-      $or: [{ slug: vendor }, { _id: mongoose.isValidObjectId(vendor) ? vendor : null }],
+    const vdoc = await prisma.vendor.findFirst({
+      where: { OR: [{ slug: String(vendor) }, { id: String(vendor) }] },
     });
-    if (vdoc) filter.vendor = vdoc._id;
+    if (vdoc) where.vendorId = vdoc.id;
   }
-  if (featured === 'true') filter.featured = true;
+  if (featured === 'true') where.featured = true;
   if (minPrice != null || maxPrice != null) {
-    filter.price = {};
-    if (minPrice != null) filter.price.$gte = Number(minPrice);
-    if (maxPrice != null) filter.price.$lte = Number(maxPrice);
+    where.price = {};
+    if (minPrice != null) where.price.gte = Number(minPrice);
+    if (maxPrice != null) where.price.lte = Number(maxPrice);
   }
   if (q?.trim()) {
-    filter.$text = { $search: q.trim() };
+    const term = q.trim();
+    where.OR = [
+      { title: { contains: term, mode: 'insensitive' } },
+      { description: { contains: term, mode: 'insensitive' } },
+    ];
   }
 
   const skip = (Math.max(1, Number(page)) - 1) * Math.min(48, Math.max(1, Number(limit)));
   const lim = Math.min(48, Math.max(1, Number(limit)));
 
-  let sortObj = { createdAt: -1 };
-  if (sort === 'price_asc') sortObj = { price: 1 };
-  if (sort === 'price_desc') sortObj = { price: -1 };
-  if (sort === 'rating') sortObj = { averageRating: -1, reviewCount: -1 };
+  let orderBy = { createdAt: 'desc' };
+  if (sort === 'price_asc') orderBy = { price: 'asc' };
+  if (sort === 'price_desc') orderBy = { price: 'desc' };
+  if (sort === 'rating') orderBy = [{ averageRating: 'desc' }, { reviewCount: 'desc' }];
 
   const [items, total] = await Promise.all([
-    Product.find(filter)
-      .populate('vendor', 'storeName slug logo approvalStatus')
-      .populate('category', 'name slug')
-      .sort(sortObj)
-      .skip(skip)
-      .limit(lim)
-      .lean(),
-    Product.countDocuments(filter),
+    prisma.product.findMany({
+      where,
+      include: {
+        vendor: { select: { storeName: true, slug: true, logo: true, approvalStatus: true } },
+        category: { select: { name: true, slug: true } },
+      },
+      orderBy,
+      skip,
+      take: lim,
+    }),
+    prisma.product.count({ where }),
   ]);
 
-  const filtered = items.filter((p) => p.vendor?.approvalStatus === 'approved');
   res.json({
-    products: filtered,
+    products: items.map((p) => toLegacy(p)),
     pagination: { total, page: Number(page), limit: lim, pages: Math.ceil(total / lim) },
   });
 });
 
 router.get('/by-id/:id', optionalAuth, async (req, res) => {
-  const product = await Product.findById(req.params.id)
-    .populate('vendor', 'storeName slug logo description banner approvalStatus')
-    .populate('category', 'name slug')
-    .lean();
+  const product = await prisma.product.findUnique({
+    where: { id: req.params.id },
+    include: {
+      vendor: true,
+      category: true,
+    },
+  });
   if (!product || product.vendor?.approvalStatus !== 'approved') {
     return res.status(404).json({ message: 'Product not found' });
   }
-  res.json(product);
+  res.json(toLegacy(product));
 });
 
 router.get('/:vendorSlug/:productSlug', optionalAuth, async (req, res) => {
-  const vendor = await Vendor.findOne({ slug: req.params.vendorSlug, approvalStatus: 'approved' });
+  const vendor = await prisma.vendor.findFirst({
+    where: { slug: req.params.vendorSlug, approvalStatus: 'approved' },
+  });
   if (!vendor) return res.status(404).json({ message: 'Store not found' });
 
-  const product = await Product.findOne({
-    vendor: vendor._id,
-    slug: req.params.productSlug,
-    active: true,
-  })
-    .populate('vendor', 'storeName slug logo description banner')
-    .populate('category', 'name slug')
-    .lean();
+  const product = await prisma.product.findFirst({
+    where: {
+      vendorId: vendor.id,
+      slug: req.params.productSlug,
+      active: true,
+    },
+    include: {
+      vendor: true,
+      category: true,
+    },
+  });
 
   if (!product) return res.status(404).json({ message: 'Product not found' });
-  res.json(product);
+  res.json(toLegacy(product));
 });
 
 router.post(
@@ -112,26 +129,35 @@ router.post(
     if (!title?.trim() || price == null || !category) {
       return res.status(400).json({ message: 'title, price, category required' });
     }
-    const cat = await Category.findById(category);
+    const cat = await prisma.category.findUnique({ where: { id: category } });
     if (!cat) return res.status(400).json({ message: 'Invalid category' });
 
     const images = (req.files || []).map((f) => `/uploads/${f.filename}`);
-    const product = await Product.create({
-      vendor: v._id,
-      category: cat._id,
-      title: title.trim(),
-      description: description || '',
-      price: Number(price),
-      compareAtPrice: compareAtPrice != null ? Number(compareAtPrice) : undefined,
-      stock: Number(stock) || 0,
-      sku: sku || '',
-      images,
-      featured: featured === true || featured === 'true',
+    let product = await prisma.product.create({
+      data: {
+        vendorId: v._id,
+        categoryId: cat.id,
+        title: title.trim(),
+        slug: `tmp-${Date.now()}`,
+        description: description || '',
+        price: Number(price),
+        compareAtPrice: compareAtPrice != null ? Number(compareAtPrice) : null,
+        stock: Number(stock) || 0,
+        sku: sku || '',
+        images,
+        featured: featured === true || featured === 'true',
+      },
     });
-    const populated = await Product.findById(product._id)
-      .populate('vendor', 'storeName slug')
-      .populate('category', 'name slug');
-    res.status(201).json(populated);
+    const slug = `${slugify(title.trim())}-${product.id.slice(-6)}`;
+    product = await prisma.product.update({
+      where: { id: product.id },
+      data: { slug },
+      include: {
+        vendor: { select: { storeName: true, slug: true } },
+        category: { select: { name: true, slug: true } },
+      },
+    });
+    res.status(201).json(toLegacy(product));
   }
 );
 
@@ -142,11 +168,11 @@ router.patch(
   loadVendor,
   upload.array('images', 8),
   async (req, res) => {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: 'Not found' });
+    const existing = await prisma.product.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ message: 'Not found' });
 
     if (req.user.role === 'vendor') {
-      if (!req.vendorProfile || product.vendor.toString() !== req.vendorProfile._id.toString()) {
+      if (!req.vendorProfile || existing.vendorId !== req.vendorProfile._id) {
         return res.status(403).json({ message: 'Not your product' });
       }
       if (req.vendorProfile.approvalStatus !== 'approved') {
@@ -156,34 +182,44 @@ router.patch(
 
     const body = req.body;
     const updates = {};
-    ['title', 'description', 'price', 'compareAtPrice', 'stock', 'sku', 'active', 'featured', 'category'].forEach(
-      (k) => {
-        if (body[k] !== undefined) updates[k] = body[k];
-      }
-    );
+    if (body.description !== undefined) updates.description = body.description;
+    if (body.price !== undefined) updates.price = Number(body.price);
+    if (body.compareAtPrice !== undefined) updates.compareAtPrice = Number(body.compareAtPrice);
+    if (body.stock !== undefined) updates.stock = Number(body.stock);
+    if (body.sku !== undefined) updates.sku = body.sku;
+    if (body.active !== undefined) updates.active = body.active === true || body.active === 'true';
+    if (body.featured !== undefined) updates.featured = body.featured === true || body.featured === 'true';
+    if (body.category !== undefined) updates.categoryId = body.category;
+    if (body.title !== undefined) {
+      updates.title = body.title.trim();
+      updates.slug = `${slugify(body.title.trim())}-${existing.id.slice(-6)}`;
+    }
     if (req.files?.length) {
       const newImages = req.files.map((f) => `/uploads/${f.filename}`);
-      updates.images = [...(product.images || []), ...newImages].slice(0, 10);
+      updates.images = [...(existing.images || []), ...newImages].slice(0, 10);
     }
 
-    Object.assign(product, updates);
-    await product.save();
-    const populated = await Product.findById(product._id)
-      .populate('vendor', 'storeName slug')
-      .populate('category', 'name slug');
-    res.json(populated);
+    const product = await prisma.product.update({
+      where: { id: req.params.id },
+      data: updates,
+      include: {
+        vendor: { select: { storeName: true, slug: true } },
+        category: { select: { name: true, slug: true } },
+      },
+    });
+    res.json(toLegacy(product));
   }
 );
 
 router.delete('/:id', protect, allowRoles('vendor', 'admin'), loadVendor, async (req, res) => {
-  const product = await Product.findById(req.params.id);
+  const product = await prisma.product.findUnique({ where: { id: req.params.id } });
   if (!product) return res.status(404).json({ message: 'Not found' });
   if (req.user.role === 'vendor') {
-    if (!req.vendorProfile || product.vendor.toString() !== req.vendorProfile._id.toString()) {
+    if (!req.vendorProfile || product.vendorId !== req.vendorProfile._id) {
       return res.status(403).json({ message: 'Not your product' });
     }
   }
-  await product.deleteOne();
+  await prisma.product.delete({ where: { id: req.params.id } });
   res.json({ ok: true });
 });
 

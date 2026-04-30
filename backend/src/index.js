@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { connectDB } from './config/db.js';
+import prisma from './lib/prisma.js';
 
 import authRoutes from './routes/auth.js';
 import categoryRoutes from './routes/categories.js';
@@ -65,7 +65,8 @@ app.use((err, _req, res, _next) => {
 
 const PORT = Number(process.env.PORT) || 5000;
 
-connectDB()
+prisma
+  .$connect()
   .then(() => {
     app.listen(PORT, () => console.log(`API listening on ${PORT}`));
   })

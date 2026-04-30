@@ -1,31 +1,35 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import { body, validationResult } from 'express-validator';
-import { Review } from '../models/Review.js';
-import { Product } from '../models/Product.js';
+import prisma from '../lib/prisma.js';
 import { optionalAuth, protect } from '../middleware/auth.js';
+import { toLegacy } from '../utils/legacy.js';
 
 const router = express.Router();
 
 async function recalcProductRating(productId) {
-  const agg = await Review.aggregate([
-    { $match: { product: new mongoose.Types.ObjectId(productId) } },
-    { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
-  ]);
-  const avg = agg[0]?.avg ?? 0;
-  const count = agg[0]?.count ?? 0;
-  await Product.findByIdAndUpdate(productId, {
-    averageRating: Math.round(avg * 10) / 10,
-    reviewCount: count,
+  const agg = await prisma.review.aggregate({
+    where: { productId },
+    _avg: { rating: true },
+    _count: { _all: true },
+  });
+  const avg = Number(agg._avg.rating ?? 0);
+  const count = agg._count._all ?? 0;
+  await prisma.product.update({
+    where: { id: productId },
+    data: {
+      averageRating: Math.round(avg * 10) / 10,
+      reviewCount: count,
+    },
   });
 }
 
 router.get('/product/:productId', optionalAuth, async (req, res) => {
-  const reviews = await Review.find({ product: req.params.productId })
-    .populate('user', 'name avatar')
-    .sort({ createdAt: -1 })
-    .lean();
-  res.json(reviews);
+  const reviews = await prisma.review.findMany({
+    where: { productId: req.params.productId },
+    include: { user: { select: { name: true, avatar: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json(reviews.map((r) => toLegacy(r)));
 });
 
 router.post(
@@ -41,34 +45,36 @@ router.post(
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const { product, rating, comment } = req.body;
-    const prod = await Product.findById(product);
+    const prod = await prisma.product.findUnique({ where: { id: product } });
     if (!prod) return res.status(404).json({ message: 'Product not found' });
 
     try {
-      const review = await Review.create({
-        product,
-        user: req.user._id,
-        rating: Number(rating),
-        comment: comment || '',
+      const review = await prisma.review.create({
+        data: {
+          productId: product,
+          userId: req.user._id,
+          rating: Number(rating),
+          comment: comment || '',
+        },
+        include: { user: { select: { name: true, avatar: true } } },
       });
       await recalcProductRating(product);
-      await review.populate('user', 'name avatar');
-      res.status(201).json(review);
+      res.status(201).json(toLegacy(review));
     } catch (e) {
-      if (e.code === 11000) return res.status(400).json({ message: 'You already reviewed this product' });
+      if (e.code === 'P2002') return res.status(400).json({ message: 'You already reviewed this product' });
       throw e;
     }
   }
 );
 
 router.delete('/:id', protect, async (req, res) => {
-  const review = await Review.findById(req.params.id);
+  const review = await prisma.review.findUnique({ where: { id: req.params.id } });
   if (!review) return res.status(404).json({ message: 'Not found' });
-  if (review.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (review.userId !== req.user._id && req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Forbidden' });
   }
-  const pid = review.product;
-  await review.deleteOne();
+  const pid = review.productId;
+  await prisma.review.delete({ where: { id: review.id } });
   await recalcProductRating(pid);
   res.json({ ok: true });
 });

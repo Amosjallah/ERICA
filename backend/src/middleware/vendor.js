@@ -1,9 +1,10 @@
-import { Vendor } from '../models/Vendor.js';
+import prisma from '../lib/prisma.js';
+import { sanitizeVendor } from '../utils/legacy.js';
 
 export async function loadVendor(req, res, next) {
   try {
-    const vendor = await Vendor.findOne({ user: req.user._id });
-    req.vendorProfile = vendor || null;
+    const vendor = await prisma.vendor.findUnique({ where: { userId: req.user._id } });
+    req.vendorProfile = vendor ? sanitizeVendor(vendor) : null;
     next();
   } catch (e) {
     next(e);

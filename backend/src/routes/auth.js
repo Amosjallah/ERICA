@@ -1,8 +1,9 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { User } from '../models/User.js';
-import { Vendor } from '../models/Vendor.js';
-import { signToken, protect } from '../middleware/auth.js';
+import prisma from '../lib/prisma.js';
+import { signToken, protect, hashPassword, comparePassword } from '../middleware/auth.js';
+import { slugify } from '../utils/slugify.js';
+import { toLegacy } from '../utils/legacy.js';
 
 const router = express.Router();
 
@@ -24,28 +25,35 @@ router.post(
       return res.status(400).json({ message: 'Store name is required for vendor registration' });
     }
 
-    const exists = await User.findOne({ email });
+    const exists = await prisma.user.findUnique({ where: { email } });
     if (exists) return res.status(400).json({ message: 'Email already registered' });
 
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role: role === 'vendor' ? 'vendor' : 'customer',
+    const hashed = await hashPassword(password);
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashed,
+        role: role === 'vendor' ? 'vendor' : 'customer',
+      },
     });
 
     if (role === 'vendor') {
-      await Vendor.create({
-        user: user._id,
-        storeName: storeName.trim(),
-        description: storeDescription || '',
-        approvalStatus: 'pending',
+      const slugBase = slugify(storeName.trim());
+      await prisma.vendor.create({
+        data: {
+          userId: user.id,
+          storeName: storeName.trim(),
+          slug: `${slugBase}-${user.id.slice(-6)}`,
+          description: storeDescription || '',
+          approvalStatus: 'pending',
+        },
       });
     }
 
-    const token = signToken(user._id);
-    const populated = await User.findById(user._id).select('-password');
-    res.status(201).json({ token, user: populated });
+    const token = signToken(user.id);
+    const { password: _, ...safe } = user;
+    res.status(201).json({ token, user: toLegacy(safe) });
   }
 );
 
@@ -57,21 +65,22 @@ router.post(
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const { email, password } = req.body;
-    const user = await User.findOne({ email }).select('+password');
-    if (!user || !(await user.comparePassword(password))) {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !(await comparePassword(password, user.password))) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    const token = signToken(user._id);
-    user.password = undefined;
-    res.json({ token, user });
+    const token = signToken(user.id);
+    const { password: _, ...safe } = user;
+    res.json({ token, user: toLegacy(safe) });
   }
 );
 
 router.get('/me', protect, async (req, res) => {
   let vendor = null;
   if (req.user.role === 'vendor') {
-    vendor = await Vendor.findOne({ user: req.user._id }).lean();
+    const v = await prisma.vendor.findUnique({ where: { userId: req.user._id } });
+    vendor = v ? toLegacy(v) : null;
   }
   res.json({ user: req.user, vendor });
 });
