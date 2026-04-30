@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { MainChrome } from "@/components/main-chrome";
 import { Suspense } from "react";
 import { AuthModalHost } from "@/components/auth-modal";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
@@ -38,7 +39,9 @@ export default function RootLayout({
       >
         <Providers>
           <Navbar />
-          <main className="min-h-[60vh]">{children}</main>
+          <main className="min-h-[60vh]">
+            <MainChrome>{children}</MainChrome>
+          </main>
           <Footer />
           <Suspense fallback={null}>
             <AuthModalHost />

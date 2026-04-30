@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
 import { SITE_NAME } from "@/lib/site";
+import { SiteLogoFull } from "@/components/site-logo";
 
 export function AuthModalHost() {
   const params = useSearchParams();
@@ -65,6 +66,9 @@ export function AuthModalHost() {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-zinc-900">
+        <div className="flex justify-center border-b border-zinc-200 bg-gradient-to-b from-amber-50/40 to-zinc-50/80 px-5 py-4 dark:border-zinc-800 dark:from-amber-950/20 dark:to-zinc-950/80">
+          <SiteLogoFull />
+        </div>
         <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3 dark:border-zinc-800">
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
             {isLogin ? "Sign in" : "Create account"}

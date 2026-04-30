@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getPublicOrigin } from "@/lib/api";
 import { SITE_NAME, SITE_NAME_SHORT } from "@/lib/site";
+import { SiteLogoMark } from "@/components/site-logo";
 
 export const metadata: Metadata = {
   title: "Shops & marketplaces",
@@ -61,27 +62,35 @@ export default async function ShopsPage() {
     <div>
       <section className="border-b border-zinc-200 bg-gradient-to-b from-white to-zinc-50 dark:border-zinc-800 dark:from-zinc-950 dark:to-zinc-900">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:py-16">
-          <p className="text-sm font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400">Directory</p>
-          <h1 className="font-serif mt-2 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl dark:text-white">
-            Shops & marketplaces
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">
-            Every vendor storefront registered on {SITE_NAME_SHORT}, plus a curated list of major global e-commerce sites for
-            comparison and inspiration.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/marketplace"
-              className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
-            >
-              Browse products
-            </Link>
-            <Link
-              href="/?auth=register"
-              className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-semibold text-zinc-900 dark:border-zinc-600 dark:text-white"
-            >
-              Register your shop
-            </Link>
+          <div className="flex flex-wrap items-start gap-4">
+            <SiteLogoMark size={52} className="shrink-0 rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-700" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400">Directory</p>
+              <h1 className="font-serif mt-2 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl dark:text-white">
+                Shops & marketplaces
+              </h1>
+              <p className="mt-4 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">
+                Every vendor storefront registered on {SITE_NAME_SHORT}, plus a curated list of major global e-commerce sites for
+                comparison and inspiration.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  href="/marketplace"
+                  className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
+                >
+                  Browse products
+                </Link>
+                <Link
+                  href="/?auth=register"
+                  className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-semibold text-zinc-900 dark:border-zinc-600 dark:text-white"
+                >
+                  Register your shop
+                </Link>
+                <Link href="/" className="rounded-lg px-5 py-2.5 text-sm font-semibold text-zinc-600 hover:underline dark:text-zinc-400">
+                  ← {SITE_NAME} home
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>

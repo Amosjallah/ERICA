@@ -8,7 +8,7 @@ import { useAuth } from "@/context/auth-context";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
 import clsx from "clsx";
-import { SITE_NAME } from "@/lib/site";
+import { SiteLogoFull } from "@/components/site-logo";
 
 export function Navbar() {
   const { user, logout, loading } = useAuth();
@@ -39,10 +39,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex items-center justify-between gap-4 sm:justify-start">
-          <Link href="/" className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-white">
-            {SITE_NAME.split(" ")[0]}{" "}
-            <span className="text-amber-600">{SITE_NAME.split(" ").slice(1).join(" ")}</span>
-          </Link>
+          <SiteLogoFull className="min-w-0 shrink" />
           <button
             type="button"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiteLogoMark } from "@/components/site-logo";
 import { SITE_NAME } from "@/lib/site";
 
 export function Footer() {
@@ -6,10 +7,15 @@ export function Footer() {
     <footer className="mt-20 border-t border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-2">
-          <p className="text-sm font-semibold text-zinc-900 dark:text-white">{SITE_NAME}</p>
-          <p className="mt-2 max-w-sm text-sm text-zinc-600 dark:text-zinc-400">
-            Campus-led multi-vendor marketplace: curated shops, secure checkout, wishlists, messaging, and vendor tools.
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <SiteLogoMark size={44} />
+            <div>
+              <p className="text-sm font-semibold text-zinc-900 dark:text-white">{SITE_NAME}</p>
+              <p className="mt-1 max-w-sm text-sm text-zinc-600 dark:text-zinc-400">
+                Campus-led multi-vendor marketplace: curated shops, secure checkout, wishlists, messaging, and vendor tools.
+              </p>
+            </div>
+          </div>
         </div>
         <div>
           <p className="text-sm font-semibold text-zinc-900 dark:text-white">Shop</p>
@@ -32,6 +38,11 @@ export function Footer() {
             <li>
               <Link href="/cart" className="hover:text-amber-600">
                 Cart
+              </Link>
+            </li>
+            <li>
+              <Link href="/checkout" className="hover:text-amber-600">
+                Checkout
               </Link>
             </li>
             <li>
@@ -82,6 +93,11 @@ export function Footer() {
             <li>
               <Link href="/dashboard" className="hover:text-amber-600">
                 Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link href="/dashboard/messages" className="hover:text-amber-600">
+                Messages
               </Link>
             </li>
             <li>
