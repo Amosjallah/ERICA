@@ -60,8 +60,11 @@ This repo is a **monorepo** (`backend/` + `frontend/`). On Vercel you **must** s
 **Steps**
 
 1. Open the project on [Vercel](https://vercel.com/dashboard) → **Settings** → **General**.
-2. **Root Directory** → **Edit** → choose **`frontend`** (the folder that contains `next.config.ts`).
-3. Save, then **Deployments** → **⋯** on the latest deployment → **Redeploy**.
+2. **Root Directory** → **Edit** → select **`frontend`** (the folder that contains `next.config.ts` and `package.json` for the Next.js app). Leaving this at **`.`** (repo root) produces **`404: NOT_FOUND`** because there is no Next.js build at the repository root.
+3. Click **Save**.
+4. **Deployments** → **⋯** on the latest deployment → **Redeploy** — turn **Use existing Build Cache** **off** once so the new root directory is picked up cleanly.
+
+A root `package.json` / `vercel.json` only helps local or custom CI builds; **Git deploys on Vercel still need Root Directory = `frontend`** so the platform runs `next build` in the right folder and publishes `frontend/.next`.
 
 **Environment variables** (Vercel → **Settings** → **Environment Variables**), for Production:
 

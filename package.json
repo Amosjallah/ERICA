@@ -1,0 +1,10 @@
+{
+  "name": "ericah-marketplace",
+  "private": true,
+  "workspaces": ["frontend"],
+  "scripts": {
+    "build": "npm run build -w frontend",
+    "dev": "npm run dev -w frontend",
+    "lint": "npm run lint -w frontend"
+  }
+}
