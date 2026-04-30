@@ -7,6 +7,11 @@ export function getPublicOrigin() {
   return process.env.NEXT_PUBLIC_SITE_ORIGIN || api || "http://localhost:5000";
 }
 
+function networkHelpMessage() {
+  const base = getApiBase();
+  return `Cannot reach the API at ${base}. Start the backend (cd backend && npm run dev), set NEXT_PUBLIC_API_URL in frontend/.env.local if the API is not on localhost:5000, and ensure backend CLIENT_URL includes your site origin (e.g. http://localhost:3000) for CORS.`;
+}
+
 export async function apiFetch<T>(
   path: string,
   options?: (RequestInit & { token?: string | null }) | undefined
@@ -21,7 +26,17 @@ export async function apiFetch<T>(
   }
   if (authToken) headers.set("Authorization", `Bearer ${authToken}`);
 
-  const res = await fetch(`${getApiBase()}${path}`, { ...options, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${getApiBase()}${path}`, { ...options, headers });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === "Failed to fetch" || e instanceof TypeError) {
+      throw new Error(networkHelpMessage());
+    }
+    throw e;
+  }
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = (data as { message?: string })?.message || res.statusText;
@@ -35,7 +50,17 @@ export async function apiForm<T>(path: string, form: FormData, token?: string | 
   const headers = new Headers();
   if (t) headers.set("Authorization", `Bearer ${t}`);
 
-  const res = await fetch(`${getApiBase()}${path}`, { method: "POST", body: form, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${getApiBase()}${path}`, { method: "POST", body: form, headers });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === "Failed to fetch" || e instanceof TypeError) {
+      throw new Error(networkHelpMessage());
+    }
+    throw e;
+  }
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = (data as { message?: string })?.message || res.statusText;

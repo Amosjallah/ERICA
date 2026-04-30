@@ -22,7 +22,6 @@ export type RegisteredStore = {
   user?: { name?: string };
 };
 
-/** Well-known external marketplaces (not affiliated — educational directory). */
 const PARTNER_MARKETPLACES = [
   { name: "Temu", tag: "Deals & variety", url: "https://www.temu.com", domain: "temu.com" },
   { name: "Shopify", tag: "Build your store", url: "https://www.shopify.com", domain: "shopify.com" },
@@ -60,34 +59,40 @@ export default async function ShopsPage() {
 
   return (
     <div>
-      <section className="border-b border-zinc-200 bg-gradient-to-b from-white to-zinc-50 dark:border-zinc-800 dark:from-zinc-950 dark:to-zinc-900">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:py-16">
-          <div className="flex flex-wrap items-start gap-4">
-            <SiteLogoMark size={52} className="shrink-0 rounded-xl ring-1 ring-zinc-200 dark:ring-zinc-700" />
+      {/* Hero — gold → sky gradient aligned with brand */}
+      <section className="relative overflow-hidden border-b border-zinc-800 bg-zinc-950">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(251,191,36,0.25),transparent)]" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-sky-500/15" />
+        <div className="relative mx-auto max-w-7xl px-4 py-14 sm:py-20">
+          <div className="flex flex-wrap items-start gap-6">
+            <SiteLogoMark size={72} className="shrink-0 shadow-lg shadow-amber-900/20 ring-2 ring-amber-500/30" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400">Directory</p>
-              <h1 className="font-serif mt-2 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl dark:text-white">
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-400/90">Directory</p>
+              <h1 className="font-serif mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
                 Shops & marketplaces
               </h1>
-              <p className="mt-4 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">
-                Every vendor storefront registered on {SITE_NAME_SHORT}, plus a curated list of major global e-commerce sites for
-                comparison and inspiration.
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-400">
+                Every approved vendor on <span className="text-zinc-200">{SITE_NAME_SHORT}</span>, plus hand-picked links to
+                global retailers for comparison—without leaving campus context.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-10 flex flex-wrap gap-3">
                 <Link
                   href="/marketplace"
-                  className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
+                  className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3 text-sm font-semibold text-zinc-950 shadow-lg shadow-amber-900/40 transition hover:from-amber-400 hover:to-amber-500"
                 >
                   Browse products
                 </Link>
                 <Link
                   href="/?auth=register"
-                  className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-semibold text-zinc-900 dark:border-zinc-600 dark:text-white"
+                  className="rounded-xl border border-zinc-600 bg-zinc-900/80 px-6 py-3 text-sm font-semibold text-zinc-100 backdrop-blur transition hover:border-amber-500/50 hover:bg-zinc-800"
                 >
                   Register your shop
                 </Link>
-                <Link href="/" className="rounded-lg px-5 py-2.5 text-sm font-semibold text-zinc-600 hover:underline dark:text-zinc-400">
+                <Link href="/" className="rounded-xl px-6 py-3 text-sm font-medium text-zinc-400 hover:text-amber-400">
                   ← {SITE_NAME} home
+                </Link>
+                <Link href="/about" className="rounded-xl px-6 py-3 text-sm font-medium text-zinc-400 hover:text-sky-400">
+                  About us
                 </Link>
               </div>
             </div>
@@ -95,24 +100,66 @@ export default async function ShopsPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:py-16">
+      {/* Quick stats */}
+      <section className="border-b border-zinc-200 bg-white py-8 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:grid-cols-3">
+          {[
+            [`${stores.length}`, "Approved shops", "On-platform vendors"],
+            ["12+", "Partner links", "Major global sites"],
+            ["1 cart", "Checkout", "Split orders per vendor"],
+          ].map(([n, t, s]) => (
+            <div key={t} className="text-center sm:text-left">
+              <p className="font-serif text-3xl font-semibold text-zinc-900 dark:text-white">{n}</p>
+              <p className="mt-1 text-sm font-semibold text-amber-800 dark:text-amber-400">{t}</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">{s}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Why use this directory */}
+      <section className="mx-auto max-w-7xl px-4 py-12">
+        <h2 className="font-serif text-2xl font-semibold text-zinc-900 dark:text-white">Why use this page?</h2>
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          {[
+            ["Campus-first", "Stores listed here are tied to our marketplace — messaging and orders stay in one ecosystem."],
+            ["Transparency", "Compare against large retailers via external links; we are not affiliated with those brands."],
+            ["Growth", "Vendors gain visibility when admins approve their storefront."],
+          ].map(([title, body], idx) => (
+            <div key={idx} className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-950">
+              <p className="font-semibold text-zinc-900 dark:text-white">{title}</p>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Registered shops */}
+      <section className="mx-auto max-w-7xl px-4 pb-14 sm:pb-16">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="font-serif text-3xl font-semibold text-zinc-900 dark:text-white">Shops on {SITE_NAME}</h2>
             <p className="mt-2 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              Approved vendor storefronts hosted on this platform. Visit a shop to see its catalog and message the seller from
-              your dashboard.
+              Approved vendor storefronts. Select a card to open products, reviews, and messaging from your dashboard.
             </p>
           </div>
           <p className="text-sm font-medium text-zinc-500">{stores.length} shop{stores.length === 1 ? "" : "s"}</p>
         </div>
 
         {stores.length === 0 ? (
-          <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 p-10 text-center dark:border-zinc-700 dark:bg-zinc-900/40">
-            <p className="text-zinc-700 dark:text-zinc-300">No approved shops yet.</p>
-            <p className="mt-2 text-sm text-zinc-500">
-              When vendors register and are approved by an admin, their stores will appear here automatically.
+          <div className="mt-10 rounded-2xl border border-dashed border-amber-500/40 bg-gradient-to-b from-zinc-50 to-white p-10 text-center dark:border-amber-900/40 dark:from-zinc-900 dark:to-zinc-950">
+            <p className="font-medium text-zinc-800 dark:text-zinc-200">No approved shops yet.</p>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              Vendors appear here once registered and approved by an admin.
             </p>
+            <div className="mt-6 rounded-xl bg-amber-50 p-4 text-left text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+              <p className="font-semibold">Seeing empty lists everywhere?</p>
+              <p className="mt-2 text-amber-900/90 dark:text-amber-200/90">
+                Ensure the API is running (`npm run dev` in `backend`), `NEXT_PUBLIC_API_URL` points at it in `frontend/.env.local`,
+                and `CLIENT_URL` in `backend/.env` matches your browser origin (e.g. <code className="rounded bg-black/10 px-1">http://localhost:3000</code>
+                ).
+              </p>
+            </div>
             <Link href="/?auth=register" className="mt-6 inline-block text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400">
               Open a vendor account →
             </Link>
@@ -126,9 +173,9 @@ export default async function ShopsPage() {
                 <li key={s._id}>
                   <Link
                     href={`/vendor/${encodeURIComponent(s.slug)}`}
-                    className="group flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-amber-500/40 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
+                    className="group flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-900/5 dark:border-zinc-800 dark:bg-zinc-900"
                   >
-                    <div className="relative h-36 bg-gradient-to-br from-amber-100 to-zinc-200 dark:from-amber-900/30 dark:to-zinc-800">
+                    <div className="relative h-40 bg-gradient-to-br from-amber-100 via-zinc-100 to-sky-100 dark:from-amber-950/40 dark:via-zinc-900 dark:to-sky-950/40">
                       {banner ? (
                         <Image
                           src={banner}
@@ -139,7 +186,7 @@ export default async function ShopsPage() {
                           unoptimized={banner.startsWith("http://localhost") || banner.startsWith("http://127.0.0.1")}
                         />
                       ) : null}
-                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/70 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/25 to-transparent" />
                       <div className="absolute bottom-3 left-3 flex items-end gap-3">
                         <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-white bg-white text-lg font-bold text-amber-800 shadow-md dark:border-zinc-900 dark:bg-zinc-800 dark:text-amber-400">
                           {logo ? (
@@ -177,12 +224,13 @@ export default async function ShopsPage() {
         )}
       </section>
 
-      <section className="border-t border-zinc-200 bg-zinc-50 py-14 dark:border-zinc-800 dark:bg-zinc-900/40 sm:py-16">
+      {/* External marketplaces */}
+      <section className="border-t border-zinc-200 bg-gradient-to-b from-zinc-50 to-white py-14 dark:border-zinc-800 dark:from-zinc-950 dark:to-zinc-900 sm:py-16">
         <div className="mx-auto max-w-7xl px-4">
           <h2 className="font-serif text-3xl font-semibold text-zinc-900 dark:text-white">Other popular e-commerce sites</h2>
           <p className="mt-2 max-w-3xl text-sm text-zinc-600 dark:text-zinc-400">
-            Independent platforms used by millions of shoppers worldwide. Links open in a new tab.{` `}
-            <span className="font-medium text-zinc-700 dark:text-zinc-300">{SITE_NAME_SHORT} is not affiliated with these brands.</span>
+            Educational references — links open in a new tab.{` `}
+            <span className="font-medium text-zinc-800 dark:text-zinc-200">{SITE_NAME_SHORT} is not affiliated with these brands.</span>
           </p>
 
           <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -192,7 +240,7 @@ export default async function ShopsPage() {
                   href={p.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-4 rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-amber-500/40 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950"
+                  className="flex items-center gap-4 rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-sky-500/40 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950"
                 >
                   <Image
                     src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(p.domain)}&sz=64`}
@@ -216,19 +264,25 @@ export default async function ShopsPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-12">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
-          <h3 className="font-serif text-xl font-semibold text-zinc-900 dark:text-white">Sell on {SITE_NAME_SHORT}</h3>
-          <p className="mt-2 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-            Want your shop listed in the first section? Create a vendor account, submit your store for approval, and start
-            listing products. Shoppers find you here and on the marketplace.
+      {/* CTA */}
+      <section className="mx-auto max-w-7xl px-4 pb-16">
+        <div className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-gradient-to-r from-amber-600/90 via-amber-700 to-sky-800 p-8 text-white shadow-xl dark:border-zinc-700">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
+          <h3 className="font-serif relative text-2xl font-semibold">Sell on {SITE_NAME_SHORT}</h3>
+          <p className="relative mt-2 max-w-xl text-sm text-amber-50/95">
+            Create a vendor account, pass admin review, and show up in this directory plus the main marketplace search.
           </p>
-          <Link
-            href="/?auth=register"
-            className="mt-6 inline-flex rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
-          >
-            Get started
-          </Link>
+          <div className="relative mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/?auth=register"
+              className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-amber-900 shadow hover:bg-zinc-100"
+            >
+              Get started
+            </Link>
+            <Link href="/contact" className="rounded-xl border border-white/40 px-5 py-2.5 text-sm font-semibold hover:bg-white/10">
+              Contact support
+            </Link>
+          </div>
         </div>
       </section>
     </div>

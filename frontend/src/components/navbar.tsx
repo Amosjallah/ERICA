@@ -77,6 +77,12 @@ export function Navbar() {
             {theme === "dark" ? "Light" : "Dark"}
           </button>
           <Link
+            href="/about"
+            className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
+          >
+            About
+          </Link>
+          <Link
             href="/shops"
             className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
           >

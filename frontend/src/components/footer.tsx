@@ -21,6 +21,11 @@ export function Footer() {
           <p className="text-sm font-semibold text-zinc-900 dark:text-white">Shop</p>
           <ul className="mt-2 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
             <li>
+              <Link href="/about" className="hover:text-amber-600">
+                About us
+              </Link>
+            </li>
+            <li>
               <Link href="/shops" className="hover:text-amber-600">
                 All shops
               </Link>
@@ -68,6 +73,11 @@ export function Footer() {
             <li>
               <Link href="/#testimonials" className="hover:text-amber-600">
                 Testimonials
+              </Link>
+            </li>
+            <li>
+              <Link href="/about" className="hover:text-amber-600">
+                About us
               </Link>
             </li>
             <li>

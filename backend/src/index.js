@@ -27,12 +27,31 @@ const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const app = express();
-const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+
+/** Comma-separated origins (e.g. production URL + preview). Always allows localhost:3000 for local dev. */
+function corsAllowedOrigins() {
+  const raw = process.env.CLIENT_URL || 'http://localhost:3000';
+  const list = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const set = new Set(list);
+  set.add('http://localhost:3000');
+  set.add('http://127.0.0.1:3000');
+  return [...set];
+}
+
+const allowedOrigins = corsAllowedOrigins();
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(
   cors({
-    origin: clientUrl,
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      const ok = allowedOrigins.includes(origin);
+      if (!ok) console.warn('[cors] blocked origin:', origin, '| allowed:', allowedOrigins);
+      callback(null, ok);
+    },
     credentials: true,
   })
 );
