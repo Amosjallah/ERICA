@@ -1,50 +1,103 @@
 import express from 'express';
-import prisma from '../lib/prisma.js';
+import { getSupabase } from '../lib/supabase.js';
 import { protect, allowRoles } from '../middleware/auth.js';
 import { loadVendor } from '../middleware/vendor.js';
-import { formatOrderResponse } from '../utils/orderFormat.js';
+import { formatOrderResponse, normalizeOrder } from '../utils/orderFormat.js';
 
 const router = express.Router();
 
+function nowIso() {
+  return new Date().toISOString();
+}
+
+async function fetchOrderFull(sb, orderId) {
+  const { data: order, error } = await sb
+    .from('Order')
+    .select(
+      `
+      *,
+      User(name, email),
+      OrderSuborder(
+        *,
+        OrderLineItem(*)
+      )
+    `
+    )
+    .eq('id', orderId)
+    .maybeSingle();
+  if (error) throw error;
+  return normalizeOrder(order);
+}
+
 router.get('/my', protect, async (req, res) => {
-  const orders = await prisma.order.findMany({
-    where: { userId: req.user._id },
-    orderBy: { createdAt: 'desc' },
-    take: 100,
-    include: {
-      user: { select: { name: true, email: true } },
-      suborders: { include: { lines: true } },
-    },
-  });
-  res.json(orders.map((o) => formatOrderResponse(o)));
+  const sb = getSupabase();
+  const { data: orders, error } = await sb
+    .from('Order')
+    .select(
+      `
+      *,
+      User(name, email),
+      OrderSuborder(
+        *,
+        OrderLineItem(*)
+      )
+    `
+    )
+    .eq('userId', req.user._id)
+    .order('createdAt', { ascending: false })
+    .limit(100);
+  if (error) return res.status(500).json({ message: error.message });
+  res.json((orders || []).map((o) => formatOrderResponse(normalizeOrder(o))));
 });
 
 router.get('/number/:orderNumber', protect, async (req, res) => {
-  const order = await prisma.order.findUnique({
-    where: { orderNumber: req.params.orderNumber },
-    include: {
-      user: { select: { name: true, email: true } },
-      suborders: { include: { lines: true } },
-    },
-  });
+  const sb = getSupabase();
+  const { data: order, error } = await sb
+    .from('Order')
+    .select(
+      `
+      *,
+      User(name, email),
+      OrderSuborder(
+        *,
+        OrderLineItem(*)
+      )
+    `
+    )
+    .eq('orderNumber', req.params.orderNumber)
+    .maybeSingle();
+  if (error) return res.status(500).json({ message: error.message });
   if (!order) return res.status(404).json({ message: 'Not found' });
-  if (order.userId !== req.user._id && req.user.role !== 'admin') {
+  const o = normalizeOrder(order);
+  if (o.userId !== req.user._id && req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Forbidden' });
   }
-  res.json(formatOrderResponse(order));
+  res.json(formatOrderResponse(o));
 });
 
 router.get('/vendor', protect, allowRoles('vendor'), loadVendor, async (req, res) => {
   if (!req.vendorProfile) return res.status(404).json({ message: 'Vendor not found' });
-  const orders = await prisma.order.findMany({
-    where: { suborders: { some: { vendorId: req.vendorProfile._id } } },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: { select: { name: true, email: true } },
-      suborders: { include: { lines: true } },
-    },
-  });
-  res.json(orders.map((o) => formatOrderResponse(o)));
+  const sb = getSupabase();
+  const { data: subs } = await sb.from('OrderSuborder').select('orderId').eq('vendorId', req.vendorProfile._id);
+  const orderIds = [...new Set((subs || []).map((s) => s.orderId))];
+  if (!orderIds.length) return res.json([]);
+
+  const { data: orders, error } = await sb
+    .from('Order')
+    .select(
+      `
+      *,
+      User(name, email),
+      OrderSuborder(
+        *,
+        OrderLineItem(*)
+      )
+    `
+    )
+    .in('id', orderIds)
+    .order('createdAt', { ascending: false });
+  if (error) return res.status(500).json({ message: error.message });
+  res.json((orders || []).map((o) => formatOrderResponse(normalizeOrder(o))));
 });
 
 router.patch(
@@ -58,49 +111,41 @@ router.patch(
     const allowed = ['processing', 'shipped', 'delivered', 'cancelled'];
     if (!allowed.includes(status)) return res.status(400).json({ message: 'Invalid status' });
 
-    const order = await prisma.order.findUnique({
-      where: { id: req.params.orderId },
-      include: { suborders: true },
-    });
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    const sb = getSupabase();
+    const { data: order, error: oe } = await sb
+      .from('Order')
+      .select('*, OrderSuborder(*)')
+      .eq('id', req.params.orderId)
+      .maybeSingle();
+    if (oe || !order) return res.status(404).json({ message: 'Order not found' });
+    const subs = order.OrderSuborder || [];
     if (!['paid', 'processing', 'shipped'].includes(order.status)) {
       return res.status(400).json({ message: 'Order cannot be updated' });
     }
 
-    const sub = order.suborders.find((s) => s.vendorId === req.vendorProfile._id);
+    const sub = subs.find((s) => s.vendorId === req.vendorProfile._id);
     if (!sub) return res.status(404).json({ message: 'Sub-order not found' });
 
-    await prisma.orderSuborder.update({
-      where: { id: sub.id },
-      data: { status },
-    });
+    const { error: ue } = await sb.from('OrderSuborder').update({ status }).eq('id', sub.id);
+    if (ue) return res.status(400).json({ message: ue.message });
 
     let newOrderStatus = order.status;
     if (order.status === 'paid' && status === 'processing') newOrderStatus = 'processing';
     if (status === 'shipped') newOrderStatus = 'shipped';
     if (status === 'delivered') {
-      const refreshed = await prisma.orderSuborder.findMany({ where: { orderId: order.id } });
-      const allDone = refreshed.every((s) => s.status === 'delivered' || s.status === 'cancelled');
+      const { data: refreshed } = await sb.from('OrderSuborder').select('*').eq('orderId', order.id);
+      const allDone = (refreshed || []).every((s) => s.status === 'delivered' || s.status === 'cancelled');
       if (allDone) newOrderStatus = 'delivered';
     }
     if (status === 'cancelled') {
-      const refreshed = await prisma.orderSuborder.findMany({ where: { orderId: order.id } });
-      const allCancelled = refreshed.every((s) => s.status === 'cancelled');
+      const { data: refreshed } = await sb.from('OrderSuborder').select('*').eq('orderId', order.id);
+      const allCancelled = (refreshed || []).every((s) => s.status === 'cancelled');
       if (allCancelled) newOrderStatus = 'cancelled';
     }
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { status: newOrderStatus },
-    });
+    await sb.from('Order').update({ status: newOrderStatus, updatedAt: nowIso() }).eq('id', order.id);
 
-    const updated = await prisma.order.findUnique({
-      where: { id: order.id },
-      include: {
-        user: { select: { name: true, email: true } },
-        suborders: { include: { lines: true } },
-      },
-    });
+    const updated = await fetchOrderFull(sb, order.id);
     res.json(formatOrderResponse(updated));
   }
 );

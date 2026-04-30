@@ -1,9 +1,11 @@
-import prisma from '../lib/prisma.js';
+import { getSupabase } from '../lib/supabase.js';
 import { sanitizeVendor } from '../utils/legacy.js';
 
 export async function loadVendor(req, res, next) {
   try {
-    const vendor = await prisma.vendor.findUnique({ where: { userId: req.user._id } });
+    const sb = getSupabase();
+    const { data: vendor, error } = await sb.from('Vendor').select('*').eq('userId', req.user._id).maybeSingle();
+    if (error) throw error;
     req.vendorProfile = vendor ? sanitizeVendor(vendor) : null;
     next();
   } catch (e) {

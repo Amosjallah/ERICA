@@ -1,7 +1,24 @@
 import { toLegacy } from './legacy.js';
 
-/** Shape Prisma order + nested suborders/lines like the old Mongoose Order document. */
+/** Normalize Supabase embedded keys to the shape formatOrderResponse expects. */
+export function normalizeOrder(order) {
+  if (!order) return null;
+  const user = order.user ?? order.User ?? null;
+  const rawSubs = order.suborders ?? order.OrderSuborder ?? [];
+  const suborders = rawSubs.map((sub) => {
+    const { OrderLineItem, lines, ...subRest } = sub;
+    return {
+      ...subRest,
+      lines: lines ?? OrderLineItem ?? [],
+    };
+  });
+  const { User: _U, OrderSuborder: _OS, suborders: _oldSubs, user: _u, ...rest } = order;
+  return { ...rest, user, suborders };
+}
+
+/** Shape order + nested suborders/lines like the legacy Order document. */
 export function formatOrderResponse(order) {
+  order = normalizeOrder(order);
   if (!order) return null;
   const subOrders = (order.suborders || []).map((sub) => ({
     vendor: sub.vendorId,

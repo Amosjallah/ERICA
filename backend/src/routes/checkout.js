@@ -1,8 +1,9 @@
 import express from 'express';
 import Stripe from 'stripe';
-import prisma from '../lib/prisma.js';
+import { getSupabase } from '../lib/supabase.js';
+import { newId } from '../lib/ids.js';
 import { protect } from '../middleware/auth.js';
-import { formatOrderResponse } from '../utils/orderFormat.js';
+import { formatOrderResponse, normalizeOrder } from '../utils/orderFormat.js';
 import { getCommissionPercent } from '../utils/commission.js';
 
 const router = express.Router();
@@ -10,19 +11,23 @@ router.use(protect);
 
 const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 
+function nowIso() {
+  return new Date().toISOString();
+}
+
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key || key.includes('your_stripe')) return null;
   return new Stripe(key);
 }
 
-async function validateCoupon(code, subtotal) {
+async function validateCoupon(sb, code, subtotal) {
   if (!code?.trim()) return { discount: 0, coupon: null };
-  const c = await prisma.coupon.findFirst({
-    where: { code: code.trim().toUpperCase(), active: true },
-  });
+  const c = (
+    await sb.from('Coupon').select('*').eq('code', code.trim().toUpperCase()).eq('active', true).maybeSingle()
+  ).data;
   if (!c) throw new Error('Invalid coupon');
-  if (c.expiresAt && c.expiresAt < new Date()) throw new Error('Coupon expired');
+  if (c.expiresAt && new Date(c.expiresAt) < new Date()) throw new Error('Coupon expired');
   if (c.minOrderAmount && subtotal < c.minOrderAmount) throw new Error('Minimum order amount not met');
   if (c.maxUses != null && c.usesCount >= c.maxUses) throw new Error('Coupon no longer available');
 
@@ -37,23 +42,20 @@ async function validateCoupon(code, subtotal) {
   return { discount, coupon: c };
 }
 
-export async function buildSubOrdersFromCart(userId) {
-  const cart = await prisma.cart.findUnique({
-    where: { userId },
-    include: {
-      items: {
-        include: {
-          product: { include: { vendor: true } },
-        },
-      },
-    },
-  });
+export async function buildSubOrdersFromCart(sb, userId) {
+  const { data: cart } = await sb.from('Cart').select('id').eq('userId', userId).maybeSingle();
+  if (!cart) return { subOrders: [], subtotal: 0 };
 
-  if (!cart?.items?.length) return { subOrders: [], subtotal: 0 };
+  const { data: cartItems } = await sb.from('CartItem').select('quantity, productId').eq('cartId', cart.id);
+  if (!cartItems?.length) return { subOrders: [], subtotal: 0 };
+
+  const pids = [...new Set(cartItems.map((i) => i.productId))];
+  const { data: prows } = await sb.from('Product').select('*, Vendor(*)').in('id', pids);
+  const pmap = Object.fromEntries((prows || []).map((p) => [p.id, { ...p, vendor: p.Vendor }]));
 
   const byVendor = new Map();
-  for (const line of cart.items) {
-    const p = line.product;
+  for (const line of cartItems) {
+    const p = pmap[line.productId];
     if (!p?.active || !p.vendor || p.vendor.approvalStatus !== 'approved') continue;
     const vid = p.vendorId;
     if (!byVendor.has(vid)) byVendor.set(vid, { vendor: p.vendor, lines: [] });
@@ -61,8 +63,8 @@ export async function buildSubOrdersFromCart(userId) {
   }
 
   const vendorIds = [...byVendor.keys()];
-  const vendorDocs = await prisma.vendor.findMany({ where: { id: { in: vendorIds } } });
-  const vendorMap = Object.fromEntries(vendorDocs.map((v) => [v.id, v]));
+  const { data: vendorDocs } = await sb.from('Vendor').select('*').in('id', vendorIds);
+  const vendorMap = Object.fromEntries((vendorDocs || []).map((v) => [v.id, v]));
 
   const subOrders = [];
   let subtotal = 0;
@@ -113,6 +115,25 @@ export async function buildSubOrdersFromCart(userId) {
   return { subOrders, subtotal };
 }
 
+async function fetchOrderFull(sb, orderId) {
+  const { data: order, error } = await sb
+    .from('Order')
+    .select(
+      `
+      *,
+      User(name, email),
+      OrderSuborder(
+        *,
+        OrderLineItem(*)
+      )
+    `
+    )
+    .eq('id', orderId)
+    .maybeSingle();
+  if (error) throw error;
+  return normalizeOrder(order);
+}
+
 router.post('/create-session', async (req, res) => {
   try {
     const stripe = getStripe();
@@ -121,14 +142,15 @@ router.post('/create-session', async (req, res) => {
       return res.status(400).json({ message: 'Shipping address required' });
     }
 
-    const { subOrders, subtotal } = await buildSubOrdersFromCart(req.user._id);
+    const sb = getSupabase();
+    const { subOrders, subtotal } = await buildSubOrdersFromCart(sb, req.user._id);
     if (!subOrders.length) return res.status(400).json({ message: 'Cart is empty or no valid items' });
 
     let discountTotal = 0;
     let coupon = null;
     if (couponCode) {
       try {
-        const v = await validateCoupon(couponCode, subtotal);
+        const v = await validateCoupon(sb, couponCode, subtotal);
         discountTotal = v.discount;
         coupon = v.coupon;
       } catch (e) {
@@ -140,55 +162,67 @@ router.post('/create-session', async (req, res) => {
     const total = Math.max(0, Math.round((subtotal - discountTotal + shippingTotal) * 100) / 100);
 
     const orderNumber = `EM-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7)}`;
+    const orderId = newId();
+    const ts = nowIso();
 
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        userId: req.user._id,
-        status: 'pending_payment',
-        subtotal: Math.round(subtotal * 100) / 100,
-        discountTotal: Math.round(discountTotal * 100) / 100,
-        shippingTotal,
-        total,
-        couponCode: coupon ? coupon.code : '',
-        shippingName: shippingAddress.name || req.user.name,
-        shippingLine1: shippingAddress.line1,
-        shippingLine2: shippingAddress.line2 || '',
-        shippingCity: shippingAddress.city,
-        shippingState: shippingAddress.state || '',
-        shippingPostalCode: shippingAddress.postalCode || '',
-        shippingCountry: shippingAddress.country || '',
-        shippingPhone: shippingAddress.phone || '',
-        suborders: {
-          create: subOrders.map((so) => ({
-            vendorId: so.vendor,
-            subtotal: so.subtotal,
-            commissionTotal: so.commissionTotal,
-            vendorPayoutTotal: so.vendorPayoutTotal,
-            status: 'pending',
-            lines: {
-              create: so.items.map((item) => ({
-                productId: item.product,
-                vendorId: item.vendor,
-                title: item.title,
-                image: item.image,
-                unitPrice: item.unitPrice,
-                quantity: item.quantity,
-                lineTotal: item.lineTotal,
-                commissionPercent: item.commissionPercent,
-                commissionAmount: item.commissionAmount,
-                vendorPayout: item.vendorPayout,
-              })),
-            },
-          })),
-        },
-      },
+    const { error: oe } = await sb.from('Order').insert({
+      id: orderId,
+      orderNumber,
+      userId: req.user._id,
+      status: 'pending_payment',
+      subtotal: Math.round(subtotal * 100) / 100,
+      discountTotal: Math.round(discountTotal * 100) / 100,
+      shippingTotal,
+      total,
+      couponCode: coupon ? coupon.code : '',
+      shippingName: shippingAddress.name || req.user.name,
+      shippingLine1: shippingAddress.line1,
+      shippingLine2: shippingAddress.line2 || '',
+      shippingCity: shippingAddress.city,
+      shippingState: shippingAddress.state || '',
+      shippingPostalCode: shippingAddress.postalCode || '',
+      shippingCountry: shippingAddress.country || '',
+      shippingPhone: shippingAddress.phone || '',
+      updatedAt: ts,
     });
+    if (oe) throw oe;
+
+    for (const so of subOrders) {
+      const sid = newId();
+      const { error: se } = await sb.from('OrderSuborder').insert({
+        id: sid,
+        orderId,
+        vendorId: so.vendor,
+        subtotal: so.subtotal,
+        commissionTotal: so.commissionTotal,
+        vendorPayoutTotal: so.vendorPayoutTotal,
+        status: 'pending',
+      });
+      if (se) throw se;
+
+      for (const item of so.items) {
+        const { error: le } = await sb.from('OrderLineItem').insert({
+          id: newId(),
+          suborderId: sid,
+          productId: item.product,
+          vendorId: item.vendor,
+          title: item.title,
+          image: item.image,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+          commissionPercent: item.commissionPercent,
+          commissionAmount: item.commissionAmount,
+          vendorPayout: item.vendorPayout,
+        });
+        if (le) throw le;
+      }
+    }
 
     if (!stripe) {
-      await finalizeOrderPayment(order.id, coupon?.id ?? null, req.user._id, { provider: 'manual' });
+      await finalizeOrderPayment(sb, orderId, coupon?.id ?? null, req.user._id, { provider: 'manual' });
       return res.json({
-        url: `${clientUrl}/checkout/success?order=${order.orderNumber}&demo=1`,
+        url: `${clientUrl}/checkout/success?order=${orderNumber}&demo=1`,
         demo: true,
       });
     }
@@ -205,7 +239,7 @@ router.post('/create-session', async (req, res) => {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `KTU E-MARKET — ${order.orderNumber}`,
+              name: `KTU E-MARKET — ${orderNumber}`,
             },
             unit_amount: amountCents,
           },
@@ -215,15 +249,13 @@ router.post('/create-session', async (req, res) => {
       success_url: `${clientUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${clientUrl}/cart`,
       metadata: {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
+        orderId,
+        orderNumber,
       },
     });
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { stripeSessionId: session.id },
-    });
+    const { error: ue } = await sb.from('Order').update({ stripeSessionId: session.id, updatedAt: nowIso() }).eq('id', orderId);
+    if (ue) throw ue;
 
     res.json({ url: session.url, sessionId: session.id });
   } catch (e) {
@@ -232,69 +264,14 @@ router.post('/create-session', async (req, res) => {
   }
 });
 
-async function finalizeOrderPayment(orderId, couponId, userId, opts = {}) {
-  await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({
-      where: { id: orderId },
-      include: { suborders: { include: { lines: true } } },
-    });
-    if (!order) throw new Error('Order not found');
-
-    for (const sub of order.suborders) {
-      for (const line of sub.lines) {
-        await tx.product.update({
-          where: { id: line.productId },
-          data: { stock: { decrement: line.quantity } },
-        });
-      }
-    }
-
-    if (couponId) {
-      await tx.coupon.update({
-        where: { id: couponId },
-        data: { usesCount: { increment: 1 } },
-      });
-    }
-
-    await tx.order.update({
-      where: { id: orderId },
-      data: {
-        status: 'paid',
-        paymentProvider: opts.provider || 'stripe',
-      },
-    });
-
-    const cart = await tx.cart.findUnique({ where: { userId } });
-    if (cart) {
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-    }
-
-    await tx.notification.create({
-      data: {
-        userId,
-        title: 'Order placed',
-        body: `Order ${order.orderNumber} confirmed.`,
-        type: 'order',
-        meta: { orderId },
-      },
-    });
-
-    const vendorIds = [...new Set(order.suborders.map((s) => s.vendorId))];
-    for (const vid of vendorIds) {
-      const v = await tx.vendor.findUnique({ where: { id: vid } });
-      if (v?.userId) {
-        await tx.notification.create({
-          data: {
-            userId: v.userId,
-            title: 'New order',
-            body: `Order ${order.orderNumber} includes your products.`,
-            type: 'order',
-            meta: { orderId },
-          },
-        });
-      }
-    }
+export async function finalizeOrderPayment(sb, orderId, couponId, userId, opts = {}) {
+  const { error } = await sb.rpc('finalize_order_payment', {
+    p_order_id: orderId,
+    p_coupon_id: couponId || '',
+    p_user_id: userId,
+    p_provider: opts.provider || 'stripe',
   });
+  if (error) throw new Error(error.message || 'Finalize failed');
 }
 
 router.post('/verify-session', async (req, res) => {
@@ -309,19 +286,14 @@ router.post('/verify-session', async (req, res) => {
     const orderId = session.metadata?.orderId;
     if (!orderId) return res.status(400).json({ message: 'Invalid session' });
 
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    const sb = getSupabase();
+    const { data: order } = await sb.from('Order').select('*').eq('id', orderId).maybeSingle();
     if (!order) return res.status(404).json({ message: 'Order not found' });
     if (order.userId !== req.user._id) {
       return res.status(403).json({ message: 'Forbidden' });
     }
     if (order.status === 'paid') {
-      const full = await prisma.order.findUnique({
-        where: { id: order.id },
-        include: {
-          user: { select: { name: true, email: true } },
-          suborders: { include: { lines: true } },
-        },
-      });
+      const full = await fetchOrderFull(sb, order.id);
       return res.json({ order: formatOrderResponse(full), alreadyPaid: true });
     }
     if (session.payment_status !== 'paid') {
@@ -330,26 +302,18 @@ router.post('/verify-session', async (req, res) => {
 
     let couponId = null;
     if (order.couponCode) {
-      const c = await prisma.coupon.findUnique({ where: { code: order.couponCode } });
+      const { data: c } = await sb.from('Coupon').select('id').eq('code', order.couponCode).maybeSingle();
       couponId = c?.id ?? null;
     }
 
-    await finalizeOrderPayment(order.id, couponId, order.userId, { provider: 'stripe' });
+    await finalizeOrderPayment(sb, order.id, couponId, order.userId, { provider: 'stripe' });
 
-    const updated = await prisma.order.findUnique({
-      where: { id: order.id },
-      include: {
-        user: { select: { name: true, email: true } },
-        suborders: { include: { lines: true } },
-      },
-    });
+    const updated = await fetchOrderFull(sb, order.id);
     res.json({ order: formatOrderResponse(updated) });
   } catch (e) {
     console.error(e);
     res.status(400).json({ message: e.message || 'Verification failed' });
   }
 });
-
-export { finalizeOrderPayment };
 
 export default router;

@@ -65,7 +65,7 @@ export default async function ShopsPage() {
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-sky-500/15" />
         <div className="relative mx-auto max-w-7xl px-4 py-14 sm:py-20">
           <div className="flex flex-wrap items-start gap-6">
-            <SiteLogoMark size={72} className="shrink-0 shadow-lg shadow-amber-900/20 ring-2 ring-amber-500/30" />
+            <SiteLogoMark size={88} className="shrink-0 shadow-lg shadow-amber-900/20 ring-2 ring-amber-500/30" />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-400/90">Directory</p>
               <h1 className="font-serif mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl">

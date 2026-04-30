@@ -9,7 +9,7 @@ export function getPublicOrigin() {
 
 function networkHelpMessage() {
   const base = getApiBase();
-  return `Cannot reach the API at ${base}. Start the backend (cd backend && npm run dev), set NEXT_PUBLIC_API_URL in frontend/.env.local if the API is not on localhost:5000, and ensure backend CLIENT_URL includes your site origin (e.g. http://localhost:3000) for CORS.`;
+  return `Cannot reach the API at ${base}. From backend: npm run dev. If the process exits right away, check backend/.env for SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, and run the SQL in supabase/migrations/ in your Supabase project. Set NEXT_PUBLIC_API_URL in frontend/.env.local if the API is not on localhost:5000. Set backend CLIENT_URL to your frontend origin (e.g. http://localhost:3000) for CORS.`;
 }
 
 export async function apiFetch<T>(

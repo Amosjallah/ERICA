@@ -6,19 +6,25 @@ import { LOGO_BRAND_HEIGHT, LOGO_BRAND_SRC, LOGO_BRAND_WIDTH, SITE_NAME } from "
 
 type SiteLogoFullProps = {
   className?: string;
+  /** Smaller wordmark for tight layouts (e.g. auth modal). */
+  compact?: boolean;
 };
 
 /** Official brand mark — image from `public/ktu-e-market-brand.png` */
-export function SiteLogoFull({ className }: SiteLogoFullProps) {
+export function SiteLogoFull({ className, compact }: SiteLogoFullProps) {
+  const imgClass = compact
+    ? "h-9 w-auto max-w-[min(100%,260px)] sm:h-10"
+    : "h-11 w-auto max-w-[min(100%,320px)] sm:h-12 sm:max-w-[min(100%,400px)] md:h-14 md:max-w-[min(100%,460px)] lg:h-16 lg:max-w-[min(100%,520px)]";
+
   return (
     <Link href="/" className={`inline-flex items-center ${className ?? ""}`} aria-label={`${SITE_NAME} home`}>
-      <span className="rounded-lg bg-black px-2 py-1 shadow-sm ring-1 ring-zinc-800/90 dark:ring-amber-900/40">
+      <span className="rounded-lg bg-black px-2.5 py-1.5 shadow-sm ring-1 ring-zinc-800/90 dark:ring-amber-900/40">
         <Image
           src={LOGO_BRAND_SRC}
           alt={SITE_NAME}
           width={LOGO_BRAND_WIDTH}
           height={LOGO_BRAND_HEIGHT}
-          className="h-9 w-auto max-w-[min(100%,280px)] sm:h-10"
+          className={imgClass}
           priority
         />
       </span>
@@ -31,7 +37,7 @@ type SiteLogoMarkProps = {
   size?: number;
 };
 
-export function SiteLogoMark({ className, size = 40 }: SiteLogoMarkProps) {
+export function SiteLogoMark({ className, size = 52 }: SiteLogoMarkProps) {
   return (
     <Link href="/" className={className} aria-label={`${SITE_NAME} home`}>
       <span

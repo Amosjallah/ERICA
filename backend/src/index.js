@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import prisma from './lib/prisma.js';
+import { getSupabase } from './lib/supabase.js';
 
 import authRoutes from './routes/auth.js';
 import categoryRoutes from './routes/categories.js';
@@ -84,12 +84,19 @@ app.use((err, _req, res, _next) => {
 
 const PORT = Number(process.env.PORT) || 5000;
 
-prisma
-  .$connect()
-  .then(() => {
+async function start() {
+  try {
+    const sb = getSupabase();
+    const { error } = await sb.from('User').select('id').limit(1);
+    if (error) throw error;
     app.listen(PORT, () => console.log(`API listening on ${PORT}`));
-  })
-  .catch((e) => {
+  } catch (e) {
     console.error(e);
+    console.error(
+      '\nCould not reach Supabase. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in backend/.env, then run supabase/migrations/20250430190000_initial_schema.sql in the Supabase SQL editor.\n'
+    );
     process.exit(1);
-  });
+  }
+}
+
+start();

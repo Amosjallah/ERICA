@@ -8,5 +8,5 @@ export const SUPPORT_EMAIL = "emarket@ktu.edu.gh";
 
 /** Brand artwork (PNG with dark background) — `public/ktu-e-market-brand.png` */
 export const LOGO_BRAND_SRC = "/ktu-e-market-brand.png";
-export const LOGO_BRAND_WIDTH = 360;
-export const LOGO_BRAND_HEIGHT = 120;
+export const LOGO_BRAND_WIDTH = 480;
+export const LOGO_BRAND_HEIGHT = 160;

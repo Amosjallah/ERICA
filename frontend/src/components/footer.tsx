@@ -8,7 +8,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-2">
           <div className="flex flex-wrap items-center gap-3">
-            <SiteLogoMark size={44} />
+            <SiteLogoMark size={56} />
             <div>
               <p className="text-sm font-semibold text-zinc-900 dark:text-white">{SITE_NAME}</p>
               <p className="mt-1 max-w-sm text-sm text-zinc-600 dark:text-zinc-400">

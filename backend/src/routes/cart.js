@@ -1,31 +1,43 @@
 import express from 'express';
-import prisma from '../lib/prisma.js';
+import { getSupabase } from '../lib/supabase.js';
 import { protect } from '../middleware/auth.js';
 import { toLegacy } from '../utils/legacy.js';
+import { newId } from '../lib/ids.js';
 
 const router = express.Router();
 
 router.use(protect);
 
-async function getOrCreateCart(userId) {
-  let cart = await prisma.cart.findUnique({ where: { userId } });
-  if (!cart) cart = await prisma.cart.create({ data: { userId } });
-  return cart;
+function nowIso() {
+  return new Date().toISOString();
 }
 
-async function cartPayload(cartId, filterApproved = false) {
-  const cart = await prisma.cart.findUnique({ where: { id: cartId } });
-  const rows = await prisma.cartItem.findMany({
-    where: { cartId },
-    include: {
-      product: {
-        include: { vendor: { select: { storeName: true, slug: true, approvalStatus: true } } },
-      },
-    },
-  });
-  let rowsFiltered = rows;
+async function getOrCreateCart(sb, userId) {
+  const { data: cart } = await sb.from('Cart').select('*').eq('userId', userId).maybeSingle();
+  if (cart) return cart;
+  const id = newId();
+  const ts = nowIso();
+  const { data: created, error } = await sb.from('Cart').insert({ id, userId, updatedAt: ts }).select('*').single();
+  if (error) throw error;
+  return created;
+}
+
+async function cartPayload(sb, cartId, filterApproved = false) {
+  const { data: cart } = await sb.from('Cart').select('*').eq('id', cartId).maybeSingle();
+  const { data: rows } = await sb
+    .from('CartItem')
+    .select('*, Product(*, Vendor(storeName, slug, approvalStatus)))')
+    .eq('cartId', cartId);
+
+  let list = rows || [];
+  list = list.map((r) => ({
+    ...r,
+    product: r.Product ? { ...r.Product, vendor: r.Product.Vendor } : null,
+  }));
+
+  let rowsFiltered = list;
   if (filterApproved) {
-    rowsFiltered = rows.filter((i) => i.product?.vendor?.approvalStatus === 'approved');
+    rowsFiltered = list.filter((i) => i.product?.vendor?.approvalStatus === 'approved');
   }
   const items = rowsFiltered.map((i) => ({
     product: toLegacy(i.product),
@@ -35,77 +47,115 @@ async function cartPayload(cartId, filterApproved = false) {
 }
 
 router.get('/', async (req, res) => {
-  const cart = await getOrCreateCart(req.user._id);
-  const payload = await cartPayload(cart.id, true);
-  res.json(payload);
+  try {
+    const sb = getSupabase();
+    const cart = await getOrCreateCart(sb, req.user._id);
+    const payload = await cartPayload(sb, cart.id, true);
+    res.json(payload);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.post('/items', async (req, res) => {
-  const { productId, quantity = 1 } = req.body;
-  if (!productId) return res.status(400).json({ message: 'Invalid product' });
+  try {
+    const { productId, quantity = 1 } = req.body;
+    if (!productId) return res.status(400).json({ message: 'Invalid product' });
 
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    include: { vendor: true },
-  });
-  if (!product?.active) return res.status(404).json({ message: 'Product not found' });
-  if (product.vendor.approvalStatus !== 'approved')
-    return res.status(400).json({ message: 'Vendor not available' });
-  const qty = Math.max(1, Number(quantity));
-  if (product.stock < qty) return res.status(400).json({ message: 'Insufficient stock' });
+    const sb = getSupabase();
+    const { data: product, error: pe } = await sb
+      .from('Product')
+      .select('*, Vendor(*)')
+      .eq('id', productId)
+      .maybeSingle();
+    if (pe || !product?.active) return res.status(404).json({ message: 'Product not found' });
+    const vendor = product.Vendor;
+    if (!vendor || vendor.approvalStatus !== 'approved') {
+      return res.status(400).json({ message: 'Vendor not available' });
+    }
+    const qty = Math.max(1, Number(quantity));
+    if (product.stock < qty) return res.status(400).json({ message: 'Insufficient stock' });
 
-  const cart = await getOrCreateCart(req.user._id);
-  const existing = await prisma.cartItem.findUnique({
-    where: { cartId_productId: { cartId: cart.id, productId } },
-  });
+    const cart = await getOrCreateCart(sb, req.user._id);
+    const { data: existing } = await sb
+      .from('CartItem')
+      .select('*')
+      .eq('cartId', cart.id)
+      .eq('productId', productId)
+      .maybeSingle();
 
-  if (existing) {
-    const nextQty = existing.quantity + qty;
-    if (product.stock < nextQty) return res.status(400).json({ message: 'Insufficient stock' });
-    await prisma.cartItem.update({
-      where: { id: existing.id },
-      data: { quantity: nextQty },
-    });
-  } else {
-    await prisma.cartItem.create({
-      data: { cartId: cart.id, productId, quantity: qty },
-    });
+    if (existing) {
+      const nextQty = existing.quantity + qty;
+      if (product.stock < nextQty) return res.status(400).json({ message: 'Insufficient stock' });
+      const { error } = await sb
+        .from('CartItem')
+        .update({ quantity: nextQty })
+        .eq('id', existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await sb.from('CartItem').insert({
+        id: newId(),
+        cartId: cart.id,
+        productId,
+        quantity: qty,
+      });
+      if (error) throw error;
+    }
+
+    res.json(await cartPayload(sb, cart.id, false));
+  } catch (e) {
+    res.status(500).json({ message: e.message });
   }
-
-  res.json(await cartPayload(cart.id, false));
 });
 
 router.patch('/items/:productId', async (req, res) => {
-  const { quantity } = req.body;
-  const pid = req.params.productId;
-  const qty = Math.max(1, Number(quantity));
+  try {
+    const { quantity } = req.body;
+    const pid = req.params.productId;
+    const qty = Math.max(1, Number(quantity));
 
-  const product = await prisma.product.findUnique({ where: { id: pid } });
-  if (!product?.active) return res.status(404).json({ message: 'Product not found' });
-  if (product.stock < qty) return res.status(400).json({ message: 'Insufficient stock' });
+    const sb = getSupabase();
+    const { data: product } = await sb.from('Product').select('*').eq('id', pid).maybeSingle();
+    if (!product?.active) return res.status(404).json({ message: 'Product not found' });
+    if (product.stock < qty) return res.status(400).json({ message: 'Insufficient stock' });
 
-  const cart = await getOrCreateCart(req.user._id);
-  const line = await prisma.cartItem.findUnique({
-    where: { cartId_productId: { cartId: cart.id, productId: pid } },
-  });
-  if (!line) return res.status(404).json({ message: 'Item not in cart' });
-  await prisma.cartItem.update({ where: { id: line.id }, data: { quantity: qty } });
+    const cart = await getOrCreateCart(sb, req.user._id);
+    const { data: line } = await sb
+      .from('CartItem')
+      .select('*')
+      .eq('cartId', cart.id)
+      .eq('productId', pid)
+      .maybeSingle();
+    if (!line) return res.status(404).json({ message: 'Item not in cart' });
+    const { error } = await sb.from('CartItem').update({ quantity: qty }).eq('id', line.id);
+    if (error) throw error;
 
-  res.json(await cartPayload(cart.id, false));
+    res.json(await cartPayload(sb, cart.id, false));
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.delete('/items/:productId', async (req, res) => {
-  const cart = await getOrCreateCart(req.user._id);
-  await prisma.cartItem.deleteMany({
-    where: { cartId: cart.id, productId: req.params.productId },
-  });
-  res.json(await cartPayload(cart.id, false));
+  try {
+    const sb = getSupabase();
+    const cart = await getOrCreateCart(sb, req.user._id);
+    await sb.from('CartItem').delete().eq('cartId', cart.id).eq('productId', req.params.productId);
+    res.json(await cartPayload(sb, cart.id, false));
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.delete('/', async (req, res) => {
-  const cart = await getOrCreateCart(req.user._id);
-  await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
-  res.json(await cartPayload(cart.id, false));
+  try {
+    const sb = getSupabase();
+    const cart = await getOrCreateCart(sb, req.user._id);
+    await sb.from('CartItem').delete().eq('cartId', cart.id);
+    res.json(await cartPayload(sb, cart.id, false));
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
 });
 
 export default router;

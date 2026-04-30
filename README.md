@@ -1,27 +1,25 @@
 # KTU E-MARKET
 
-Full-stack multi-vendor marketplace: **Next.js + Tailwind** frontend, **Express + PostgreSQL (Supabase)** API via **Prisma**, **JWT** auth, **Stripe Checkout** (with **demo checkout** when Stripe keys are absent).
+Full-stack multi-vendor marketplace: **Next.js + Tailwind** frontend, **Express** API using the **Supabase JavaScript client** (service role) against **Postgres on Supabase**, **JWT** auth, **Stripe Checkout** (with **demo checkout** when Stripe keys are absent).
 
 ## Prerequisites
 
 - Node.js 18+
-- A **PostgreSQL** database — recommended: **[Supabase](https://supabase.com)** (hosted Postgres + dashboard)
+- A **[Supabase](https://supabase.com)** project (Postgres + API URL + service role key)
 
-## 1. Database (Supabase)
+## 1. Database schema (Supabase)
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Open **Project Settings → Database** and copy the **URI** connection string (use **Transaction** pooler or **Direct**; append `?sslmode=require` if your client requires it).
-3. Put it in `backend/.env` as `DATABASE_URL` (see `.env.example`).
+2. Open **SQL Editor** → **New query**, paste the contents of **`supabase/migrations/20250430190000_initial_schema.sql`**, and run it. This creates tables, enums, indexes, foreign keys, and the **`finalize_order_payment`** RPC used at checkout.
 
-Push the schema and seed:
+## 2. Backend
 
 ```bash
 cd backend
 copy .env.example .env
-# Edit .env: set DATABASE_URL to your Supabase Postgres URI
+# Edit .env: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from Project Settings → API
 
 npm install
-npx prisma db push
 npm run seed
 npm run dev
 ```
@@ -34,13 +32,14 @@ npm run dev
 
 | Variable | Purpose |
 |----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string (Supabase URI) |
+| `SUPABASE_URL` | Project URL (e.g. `https://xxxx.supabase.co`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server only** — full access; never expose to the browser |
 | `JWT_SECRET` | Sign JWT access tokens |
 | `CLIENT_URL` | Frontend origin for CORS and Stripe redirects (e.g. `http://localhost:3000`) |
 | `STRIPE_SECRET_KEY` | Stripe secret key; leave placeholder for **demo checkout** |
 | `PLATFORM_COMMISSION_PERCENT` | Platform commission on each line item (default 10) |
 
-## 2. Frontend
+## 3. Frontend
 
 ```bash
 cd frontend
@@ -87,6 +86,6 @@ The Express API in **`backend/`** must run on another host (Railway, Render, Fly
 
 ## Project layout
 
-- `backend/prisma` — Prisma schema (`schema.prisma`).
-- `backend/src` — Express app, routes, JWT, uploads, Stripe checkout.
+- `supabase/migrations` — Postgres DDL + `finalize_order_payment` RPC (run in Supabase SQL editor).
+- `backend/src` — Express app, routes, JWT, uploads, Stripe checkout, Supabase client.
 - `frontend/src` — Next.js App Router, UI, dashboards, marketplace pages.

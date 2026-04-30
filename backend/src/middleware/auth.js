@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import prisma from '../lib/prisma.js';
+import { getSupabase } from '../lib/supabase.js';
 import { sanitizeUser } from '../utils/legacy.js';
 
 export function signToken(userId) {
@@ -26,7 +26,9 @@ export async function protect(req, res, next) {
       return res.status(401).json({ message: 'Not authorized, no token' });
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await prisma.user.findUnique({ where: { id: decoded.sub } });
+    const sb = getSupabase();
+    const { data: user, error } = await sb.from('User').select('*').eq('id', decoded.sub).maybeSingle();
+    if (error) throw error;
     if (!user) return res.status(401).json({ message: 'User not found' });
     req.user = sanitizeUser(user);
     next();
@@ -41,7 +43,8 @@ export async function optionalAuth(req, res, next) {
   try {
     const token = auth.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await prisma.user.findUnique({ where: { id: decoded.sub } });
+    const sb = getSupabase();
+    const { data: user } = await sb.from('User').select('*').eq('id', decoded.sub).maybeSingle();
     if (user) req.user = sanitizeUser(user);
   } catch {
     /* invalid token */
