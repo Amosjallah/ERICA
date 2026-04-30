@@ -1,5 +1,18 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ProductCard } from "@/components/product-card";
+import {
+  HOME_CATEGORY_IMAGES,
+  HomeEditorial,
+  HomeExploreFallback,
+  HomeFeatures,
+  HomeHero,
+  HomeHowItWorks,
+  HomeNewsletter,
+  HomeStatsBanner,
+  HomeTestimonials,
+  HomeVendorCta,
+} from "@/components/home-sections";
 
 const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -22,61 +35,59 @@ export default async function HomePage() {
 
   return (
     <div>
-      <section className="relative overflow-hidden border-b border-zinc-200 bg-gradient-to-b from-white to-zinc-50 dark:border-zinc-800 dark:from-zinc-950 dark:to-zinc-900">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:py-24">
-          <div className="max-w-2xl animate-fade-in">
-            <p className="text-sm font-medium uppercase tracking-widest text-amber-700 dark:text-amber-400">
-              Ericah Marketplace
-            </p>
-            <h1 className="font-serif mt-4 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl dark:text-white">
-              Discover products from vendors you will love.
-            </h1>
-            <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
-              Premium multi-vendor shopping with secure checkout, honest reviews, and stores you can trust.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/marketplace"
-                className="rounded-lg bg-zinc-900 px-6 py-3 text-sm font-semibold text-amber-100 shadow-lg transition hover:bg-zinc-800 dark:bg-amber-600 dark:text-zinc-900 dark:hover:bg-amber-500"
-              >
-                Shop the marketplace
-              </Link>
-              <Link
-                href="/?auth=register"
-                className="rounded-lg border border-zinc-300 bg-white px-6 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-              >
-                Start selling
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HomeHero />
+      <HomeStatsBanner />
 
-      {categories.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 py-12">
-          <h2 className="font-serif text-2xl font-semibold text-zinc-900 dark:text-white">Shop by category</h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {categories.slice(0, 6).map((c) => (
+      {categories.length > 0 ? (
+        <section className="mx-auto max-w-7xl px-4 py-14 sm:py-16">
+          <div className="max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400">Categories</p>
+            <h2 className="font-serif mt-2 text-3xl font-semibold text-zinc-900 dark:text-white">Shop by category</h2>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              Jump straight into the aisles that match your mood—each card links to filtered marketplace results.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {categories.slice(0, 6).map((c, i) => (
               <Link
                 key={c._id}
                 href={`/marketplace?category=${encodeURIComponent(c.slug)}`}
-                className="rounded-xl border border-zinc-200 bg-white p-5 transition hover:border-amber-500/50 dark:border-zinc-800 dark:bg-zinc-900"
+                className="group relative min-h-[168px] overflow-hidden rounded-2xl border border-zinc-200 shadow-sm transition hover:border-amber-500/50 hover:shadow-md dark:border-zinc-800"
               >
-                <p className="font-medium text-zinc-900 dark:text-white">{c.name}</p>
-                {c.description && (
-                  <p className="mt-1 line-clamp-2 text-sm text-zinc-500 dark:text-zinc-400">{c.description}</p>
-                )}
+                <Image
+                  src={HOME_CATEGORY_IMAGES[i % HOME_CATEGORY_IMAGES.length]}
+                  alt={`${c.name} category`}
+                  fill
+                  className="object-cover transition duration-500 group-hover:scale-105"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/40 to-zinc-950/10" />
+                <div className="relative flex h-full min-h-[168px] flex-col justify-end p-5">
+                  <p className="font-serif text-lg font-semibold text-white">{c.name}</p>
+                  {c.description && (
+                    <p className="mt-1 line-clamp-2 text-sm text-zinc-200/90">{c.description}</p>
+                  )}
+                  <span className="mt-2 text-xs font-semibold uppercase tracking-wide text-amber-300">Browse →</span>
+                </div>
               </Link>
             ))}
           </div>
         </section>
+      ) : (
+        <HomeExploreFallback />
       )}
 
-      <section className="mx-auto max-w-7xl px-4 py-12">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="font-serif text-2xl font-semibold text-zinc-900 dark:text-white">Featured picks</h2>
-          <Link href="/marketplace" className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400">
-            View all
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:py-14">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400">Hand-picked</p>
+            <h2 className="font-serif text-3xl font-semibold text-zinc-900 dark:text-white">Featured picks</h2>
+            <p className="mt-1 max-w-xl text-sm text-zinc-600 dark:text-zinc-400">
+              Rotating spotlight on standout products from our vendors—updated from your catalog when the API is connected.
+            </p>
+          </div>
+          <Link href="/marketplace" className="text-sm font-semibold text-amber-800 hover:underline dark:text-amber-400">
+            View all products →
           </Link>
         </div>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -91,6 +102,13 @@ export default async function HomePage() {
           </p>
         )}
       </section>
+
+      <HomeFeatures />
+      <HomeHowItWorks />
+      <HomeEditorial />
+      <HomeTestimonials />
+      <HomeVendorCta />
+      <HomeNewsletter />
     </div>
   );
 }

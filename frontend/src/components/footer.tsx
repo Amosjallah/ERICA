@@ -3,11 +3,11 @@ import Link from "next/link";
 export function Footer() {
   return (
     <footer className="mt-20 border-t border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="lg:col-span-2">
           <p className="text-sm font-semibold text-zinc-900 dark:text-white">Ericah Marketplace</p>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            A premium multi-vendor destination for curated products.
+          <p className="mt-2 max-w-sm text-sm text-zinc-600 dark:text-zinc-400">
+            A premium multi-vendor destination for curated products, secure checkout, wishlists, and in-app messaging.
           </p>
         </div>
         <div>
@@ -19,6 +19,16 @@ export function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/wishlist" className="hover:text-amber-600">
+                Wishlist
+              </Link>
+            </li>
+            <li>
+              <Link href="/cart" className="hover:text-amber-600">
+                Cart
+              </Link>
+            </li>
+            <li>
               <Link href="/contact" className="hover:text-amber-600">
                 Contact
               </Link>
@@ -26,21 +36,46 @@ export function Footer() {
           </ul>
         </div>
         <div>
-          <p className="text-sm font-semibold text-zinc-900 dark:text-white">Sell</p>
+          <p className="text-sm font-semibold text-zinc-900 dark:text-white">Features</p>
+          <ul className="mt-2 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <li>
+              <Link href="/#features" className="hover:text-amber-600">
+                Platform overview
+              </Link>
+            </li>
+            <li>
+              <Link href="/#how-it-works" className="hover:text-amber-600">
+                How it works
+              </Link>
+            </li>
+            <li>
+              <Link href="/#testimonials" className="hover:text-amber-600">
+                Testimonials
+              </Link>
+            </li>
+            <li>
+              <Link href="/marketplace" className="hover:text-amber-600">
+                Browse products
+              </Link>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-zinc-900 dark:text-white">Sell & account</p>
           <ul className="mt-2 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
             <li>
               <Link href="/?auth=register" className="hover:text-amber-600">
                 Become a vendor
               </Link>
             </li>
-          </ul>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-zinc-900 dark:text-white">Account</p>
-          <ul className="mt-2 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
             <li>
               <Link href="/dashboard" className="hover:text-amber-600">
                 Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link href="/dashboard/vendor" className="hover:text-amber-600">
+                Vendor portal
               </Link>
             </li>
           </ul>
