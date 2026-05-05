@@ -71,7 +71,7 @@ export function ProductActions({
           type="button"
           disabled={loading || stock < 1}
           onClick={addCart}
-          className="flex-1 rounded-lg bg-zinc-900 px-5 py-3 text-sm font-semibold text-amber-100 disabled:opacity-50 dark:bg-amber-600 dark:text-zinc-900"
+          className="flex-1 rounded-lg bg-zinc-900 px-5 py-3 text-sm font-semibold text-amber-100 disabled:opacity-50 dark:bg-amber-600 dark:text-neutral-950"
         >
           Add to cart
         </button>

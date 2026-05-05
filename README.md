@@ -14,6 +14,17 @@ Full-stack multi-vendor marketplace: **Next.js + Tailwind** frontend, **Express*
 
 ## 2. Backend
 
+From the **repository root** you can start **frontend + API together**:
+
+```bash
+npm install
+npm run dev
+```
+
+This runs Next.js and the Express API in one terminal. To run them separately: `npm run dev:frontend` and `npm run dev:backend`.
+
+Or from **`backend/`** only:
+
 ```bash
 cd backend
 copy .env.example .env
@@ -40,6 +51,10 @@ npm run dev
 | `PLATFORM_COMMISSION_PERCENT` | Platform commission on each line item (default 10) |
 
 ## 3. Frontend
+
+Create **`frontend/.env.local`** (see `frontend/.env.local.example`) with at least `NEXT_PUBLIC_API_URL` pointing at your API.
+
+If you did **not** use root `npm run dev`, install and start from **`frontend/`**:
 
 ```bash
 cd frontend

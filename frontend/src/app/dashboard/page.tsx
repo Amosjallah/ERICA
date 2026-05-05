@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/context/auth-context";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { SITE_NAME_SHORT } from "@/lib/site";
+import { STOCK_IMAGES } from "@/lib/stock-images";
 
 type Order = {
   _id: string;
@@ -34,6 +36,17 @@ export default function CustomerDashboard() {
       <p className="mt-2 text-sm text-zinc-500">
         Signed in as {user.email} · role: {user.role}
       </p>
+
+      <div className="relative mt-8 aspect-[2/1] max-h-48 overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800">
+        <Image
+          src={STOCK_IMAGES.accountWelcome}
+          alt=""
+          fill
+          className="object-cover"
+          sizes="(max-width: 896px) 100vw, 896px"
+        />
+      </div>
+
       <div className="mt-6 flex flex-wrap gap-3">
         {user.role === "vendor" && (
           <Link

@@ -1,28 +1,28 @@
 import Image from "next/image";
 import Link from "next/link";
 import { SITE_NAME, SITE_NAME_SHORT } from "@/lib/site";
+import { HomeHeroSlider } from "@/components/home-hero-slider";
 
-/** Rotating hero imagery for category cards on the home page when API has no image. */
+/** Fallback imagery for category cards when the API has no image (verified Unsplash IDs). */
 export const HOME_CATEGORY_IMAGES = [
-  "https://images.unsplash.com/photo-1441986300917-64674bd918d?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80",
 ] as const;
 
 const img = {
-  hero: "https://images.unsplash.com/photo-1441986300917-64674bd918d?q=85&w=1600&auto=format&fit=crop",
-  browse: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=85&w=900&auto=format&fit=crop",
-  vendor: "https://images.unsplash.com/photo-1556740758-90de374c12ad?q=85&w=900&auto=format&fit=crop",
-  delivery: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?q=85&w=800&auto=format&fit=crop",
-  lifestyle: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=85&w=900&auto=format&fit=crop",
-  craft: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=85&w=900&auto=format&fit=crop",
-  tech: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=85&w=800&auto=format&fit=crop",
-  avatar1: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop",
-  avatar2: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop",
-  avatar3: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&auto=format&fit=crop",
+  browse: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=85",
+  vendor: "https://images.unsplash.com/photo-1556740758-90de374c12ad?auto=format&fit=crop&w=900&q=85",
+  delivery: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=800&q=85",
+  lifestyle: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=900&q=85",
+  craft: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=900&q=85",
+  tech: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=85",
+  avatar1: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
+  avatar2: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+  avatar3: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80",
 };
 
 function IconShield({ className }: { className?: string }) {
@@ -106,7 +106,7 @@ export function HomeHero() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/marketplace"
-              className="rounded-lg bg-zinc-900 px-6 py-3 text-sm font-semibold text-amber-100 shadow-lg transition hover:bg-zinc-800 dark:bg-amber-600 dark:text-zinc-900 dark:hover:bg-amber-500"
+              className="rounded-lg bg-zinc-900 px-6 py-3 text-sm font-semibold text-amber-100 shadow-lg transition hover:bg-zinc-800 dark:bg-amber-600 dark:text-neutral-950 dark:hover:bg-amber-500"
             >
               Shop the marketplace
             </Link>
@@ -144,20 +144,7 @@ export function HomeHero() {
             </div>
           </dl>
         </div>
-        <div className="relative mx-auto w-full max-w-lg lg:max-w-none animate-fade-in">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-zinc-200 shadow-2xl shadow-zinc-900/10 dark:border-zinc-700 dark:shadow-black/40 sm:aspect-[5/6]">
-            <Image src={img.hero} alt="Bright retail store interior with clothing displays" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" priority />
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/60 via-transparent to-transparent" />
-            <p className="absolute bottom-6 left-6 right-6 text-sm font-medium text-white drop-shadow-md">
-              Curated storefronts · Verified vendors · Secure payments
-            </p>
-          </div>
-          <div className="absolute -bottom-6 -left-4 hidden w-44 overflow-hidden rounded-xl border border-zinc-200 shadow-xl dark:border-zinc-700 sm:block">
-            <div className="relative aspect-square">
-              <Image src={img.delivery} alt="Hands handing over a shopping bag" fill className="object-cover" sizes="176px" />
-            </div>
-          </div>
-        </div>
+        <HomeHeroSlider />
       </div>
     </section>
   );
@@ -485,7 +472,7 @@ export function HomeNewsletter() {
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               href="/marketplace"
-              className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 dark:bg-amber-500 dark:text-zinc-900 dark:hover:bg-amber-400"
+              className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 dark:bg-amber-500 dark:text-neutral-950 dark:hover:bg-amber-400"
             >
               Browse new listings
             </Link>

@@ -5,6 +5,7 @@ import { newId } from '../lib/ids.js';
 import { protect } from '../middleware/auth.js';
 import { formatOrderResponse, normalizeOrder } from '../utils/orderFormat.js';
 import { getCommissionPercent } from '../utils/commission.js';
+import { buildShippingLine2 } from '../utils/shippingLine2.js';
 
 const router = express.Router();
 router.use(protect);
@@ -138,8 +139,27 @@ router.post('/create-session', async (req, res) => {
   try {
     const stripe = getStripe();
     const { shippingAddress, couponCode } = req.body;
-    if (!shippingAddress?.line1 || !shippingAddress?.city) {
-      return res.status(400).json({ message: 'Shipping address required' });
+    const sa = shippingAddress && typeof shippingAddress === 'object' ? shippingAddress : {};
+    const line1 = String(sa.line1 || '').trim();
+    const city = String(sa.city || '').trim();
+    const name = String(sa.name || '').trim();
+    const phone = String(sa.phone || '').trim();
+    const country = String(sa.country || '').trim();
+    const postalCode = String(sa.postalCode || '').trim();
+    if (!line1 || !city) {
+      return res.status(400).json({ message: 'Street address and city are required' });
+    }
+    if (!name) {
+      return res.status(400).json({ message: 'Recipient full name is required' });
+    }
+    if (!phone) {
+      return res.status(400).json({ message: 'Phone number is required for delivery contact' });
+    }
+    if (!country) {
+      return res.status(400).json({ message: 'Country is required' });
+    }
+    if (!postalCode) {
+      return res.status(400).json({ message: 'Postal / ZIP code is required' });
     }
 
     const sb = getSupabase();
@@ -175,14 +195,14 @@ router.post('/create-session', async (req, res) => {
       shippingTotal,
       total,
       couponCode: coupon ? coupon.code : '',
-      shippingName: shippingAddress.name || req.user.name,
-      shippingLine1: shippingAddress.line1,
-      shippingLine2: shippingAddress.line2 || '',
-      shippingCity: shippingAddress.city,
-      shippingState: shippingAddress.state || '',
-      shippingPostalCode: shippingAddress.postalCode || '',
-      shippingCountry: shippingAddress.country || '',
-      shippingPhone: shippingAddress.phone || '',
+      shippingName: name || req.user.name,
+      shippingLine1: line1,
+      shippingLine2: buildShippingLine2(sa.line2, sa.deliveryNotes),
+      shippingCity: city,
+      shippingState: String(sa.state || '').trim(),
+      shippingPostalCode: postalCode,
+      shippingCountry: country,
+      shippingPhone: phone,
       updatedAt: ts,
     });
     if (oe) throw oe;

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getPublicOrigin } from "@/lib/api";
+import { productImageUnoptimized } from "@/lib/image-url";
 
 export type ProductCardProps = {
   product: {
@@ -36,7 +37,7 @@ export function ProductCard({ product }: ProductCardProps) {
           fill
           className="object-cover transition duration-300 group-hover:scale-[1.02]"
           sizes="(max-width:768px) 100vw, 25vw"
-          unoptimized={src.startsWith("http://localhost") || src.endsWith(".svg")}
+          unoptimized={productImageUnoptimized(src)}
         />
       </div>
       <div className="flex flex-1 flex-col gap-1 p-3">

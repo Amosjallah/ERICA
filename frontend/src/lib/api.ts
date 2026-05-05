@@ -1,5 +1,11 @@
+/** Base URL for JSON API (must end with `/api`). Missing suffix is fixed so requests are not sent to `/auth/...` on the origin root (404). */
 export function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  let base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api").trim();
+  base = base.replace(/\/+$/, "");
+  if (!/\/api$/i.test(base)) {
+    base = `${base}/api`;
+  }
+  return base;
 }
 
 export function getPublicOrigin() {
@@ -9,7 +15,7 @@ export function getPublicOrigin() {
 
 function networkHelpMessage() {
   const base = getApiBase();
-  return `Cannot reach the API at ${base}. From backend: npm run dev. If the process exits right away, check backend/.env for SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, and run the SQL in supabase/migrations/ in your Supabase project. Set NEXT_PUBLIC_API_URL in frontend/.env.local if the API is not on localhost:5000. Set backend CLIENT_URL to your frontend origin (e.g. http://localhost:3000) for CORS.`;
+  return `Cannot reach the API at ${base}. From backend: npm run dev. If the process exits right away, check backend/.env for SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, and run the SQL in supabase/migrations/ in your Supabase project. If the backend log says the port is already in use, stop the other process or set PORT in backend/.env and the same port in frontend/.env.local as NEXT_PUBLIC_API_URL (e.g. http://localhost:5001/api). Set NEXT_PUBLIC_API_URL in frontend/.env.local if the API is not on localhost:5000. Set backend CLIENT_URL to your frontend origin (e.g. http://localhost:3000) for CORS.`;
 }
 
 export async function apiFetch<T>(
@@ -39,20 +45,27 @@ export async function apiFetch<T>(
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = (data as { message?: string })?.message || res.statusText;
+    const d = data as { message?: string; errors?: { msg?: string }[] };
+    const firstVal = Array.isArray(d.errors) && d.errors[0]?.msg ? d.errors[0].msg : null;
+    const msg = d.message || firstVal || res.statusText;
     throw new Error(msg);
   }
   return data as T;
 }
 
-export async function apiForm<T>(path: string, form: FormData, token?: string | null) {
+export async function apiForm<T>(
+  path: string,
+  form: FormData,
+  token?: string | null,
+  init?: { method?: string }
+) {
   const t = token ?? (typeof window !== "undefined" ? localStorage.getItem("token") : null);
   const headers = new Headers();
   if (t) headers.set("Authorization", `Bearer ${t}`);
 
   let res: Response;
   try {
-    res = await fetch(`${getApiBase()}${path}`, { method: "POST", body: form, headers });
+    res = await fetch(`${getApiBase()}${path}`, { method: init?.method || "POST", body: form, headers });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg === "Failed to fetch" || e instanceof TypeError) {
@@ -63,7 +76,9 @@ export async function apiForm<T>(path: string, form: FormData, token?: string | 
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = (data as { message?: string })?.message || res.statusText;
+    const d = data as { message?: string; errors?: { msg?: string }[] };
+    const firstVal = Array.isArray(d.errors) && d.errors[0]?.msg ? d.errors[0].msg : null;
+    const msg = d.message || firstVal || res.statusText;
     throw new Error(msg);
   }
   return data as T;

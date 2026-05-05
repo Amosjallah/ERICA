@@ -1,11 +1,30 @@
 import express from 'express';
+import { body, validationResult } from 'express-validator';
 import { getSupabase } from '../lib/supabase.js';
 import { protect, allowRoles } from '../middleware/auth.js';
 import { toLegacy } from '../utils/legacy.js';
 import { formatOrderResponse, normalizeOrder } from '../utils/orderFormat.js';
 import { newId } from '../lib/ids.js';
+import { performPlatformAdminLogin } from '../lib/platformAdminLogin.js';
+import { normalizeAuthEmail } from '../utils/authEmail.js';
 
 const router = express.Router();
+
+/** Public — must stay above `protect`. Same contract as POST /api/auth/admin/login. */
+router.post(
+  '/login',
+  [body('email').trim().notEmpty().isEmail(), body('password').notEmpty()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    const email = normalizeAuthEmail(req.body.email);
+    const { password } = req.body;
+    const out = await performPlatformAdminLogin(email, password);
+    if (!out.ok) return res.status(out.status).json({ message: out.message });
+    res.json({ token: out.token, user: out.user });
+  }
+);
+
 router.use(protect, allowRoles('admin'));
 
 function nowIso() {

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { getPublicOrigin } from "@/lib/api";
+import { getApiBase, getPublicOrigin } from "@/lib/api";
+import { isLoopbackImageUrl } from "@/lib/image-url";
+import { fetchApiOk } from "@/lib/server-fetch";
 import { SITE_NAME, SITE_NAME_SHORT } from "@/lib/site";
 import { SiteLogoMark } from "@/components/site-logo";
 
@@ -10,7 +12,8 @@ export const metadata: Metadata = {
   description: `${SITE_NAME_SHORT} vendor directory and curated links to major global e-commerce platforms.`,
 };
 
-const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+/** Always load approved shops at request time so the list is not baked empty at build when the API is down. */
+export const dynamic = "force-dynamic";
 
 export type RegisteredStore = {
   _id: string;
@@ -38,14 +41,11 @@ const PARTNER_MARKETPLACES = [
 ] as const;
 
 async function fetchStores(): Promise<RegisteredStore[]> {
-  try {
-    const res = await fetch(`${api}/vendors/stores`, { next: { revalidate: 60 } });
-    if (!res.ok) return [];
-    const data = (await res.json()) as unknown;
-    return Array.isArray(data) ? (data as RegisteredStore[]) : [];
-  } catch {
-    return [];
-  }
+  const api = getApiBase();
+  const res = await fetchApiOk(`${api}/vendors/stores`, { cache: "no-store" });
+  if (!res?.ok) return [];
+  const data = (await res.json()) as unknown;
+  return Array.isArray(data) ? (data as RegisteredStore[]) : [];
 }
 
 function mediaUrl(path: string | null | undefined) {
@@ -183,7 +183,7 @@ export default async function ShopsPage() {
                           fill
                           className="object-cover transition duration-500 group-hover:scale-[1.02]"
                           sizes="(max-width:768px) 100vw, 33vw"
-                          unoptimized={banner.startsWith("http://localhost") || banner.startsWith("http://127.0.0.1")}
+                          unoptimized={isLoopbackImageUrl(banner)}
                         />
                       ) : null}
                       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/25 to-transparent" />
@@ -196,7 +196,7 @@ export default async function ShopsPage() {
                               fill
                               className="object-cover"
                               sizes="56px"
-                              unoptimized={logo.startsWith("http://localhost") || logo.startsWith("http://127.0.0.1")}
+                              unoptimized={isLoopbackImageUrl(logo)}
                             />
                           ) : (
                             <span aria-hidden>{s.storeName.slice(0, 1).toUpperCase()}</span>

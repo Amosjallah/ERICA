@@ -13,24 +13,33 @@ import {
   HomeTestimonials,
   HomeVendorCta,
 } from "@/components/home-sections";
-
-const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-
-async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${api}${path}`, { next: { revalidate: 30 } });
-  if (!res.ok) throw new Error("Failed to load");
-  return res.json();
-}
+import { getApiBase } from "@/lib/api";
+import { fetchApiOk } from "@/lib/server-fetch";
 
 export default async function HomePage() {
-  let featured: unknown[] = [];
+  const api = getApiBase();
+  /** Newest active products from approved vendors (not only `featured` — uploads show here). */
+  let showcase: unknown[] = [];
   let categories: { _id: string; name: string; slug: string; description?: string }[] = [];
-  try {
-    const fp = await fetchJson<{ products: typeof featured }>("/products?featured=true&limit=8");
-    featured = fp.products || [];
-    categories = await fetchJson<typeof categories>("/categories");
-  } catch {
-    featured = [];
+
+  const productsRes = await fetchApiOk(`${api}/products?limit=8&sort=newest`, { next: { revalidate: 30 } });
+  if (productsRes?.ok) {
+    try {
+      const body = (await productsRes.json()) as { products?: unknown };
+      showcase = Array.isArray(body.products) ? body.products : [];
+    } catch {
+      showcase = [];
+    }
+  }
+
+  const catRes = await fetchApiOk(`${api}/categories`, { next: { revalidate: 30 } });
+  if (catRes?.ok) {
+    try {
+      const raw = await catRes.json();
+      categories = Array.isArray(raw) ? raw : [];
+    } catch {
+      categories = [];
+    }
   }
 
   return (
@@ -38,7 +47,7 @@ export default async function HomePage() {
       <HomeHero />
       <HomeStatsBanner />
 
-      {categories.length > 0 ? (
+      {Array.isArray(categories) && categories.length > 0 ? (
         <section className="mx-auto max-w-7xl px-4 py-14 sm:py-16">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400">Categories</p>
@@ -80,10 +89,10 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-4 py-12 sm:py-14">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400">Hand-picked</p>
-            <h2 className="font-serif text-3xl font-semibold text-zinc-900 dark:text-white">Featured picks</h2>
+            <p className="text-sm font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400">Just listed</p>
+            <h2 className="font-serif text-3xl font-semibold text-zinc-900 dark:text-white">Latest from vendors</h2>
             <p className="mt-1 max-w-xl text-sm text-zinc-600 dark:text-zinc-400">
-              Rotating spotlight on standout products from our vendors—updated from your catalog when the API is connected.
+              New uploads and catalog updates from approved shops—newest listings first.
             </p>
           </div>
           <Link href="/marketplace" className="text-sm font-semibold text-amber-800 hover:underline dark:text-amber-400">
@@ -91,14 +100,14 @@ export default async function HomePage() {
           </Link>
         </div>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.isArray(featured) &&
-            featured.map((p) => (
+          {Array.isArray(showcase) &&
+            showcase.map((p) => (
               <ProductCard key={(p as { _id: string })._id} product={p as never} />
             ))}
         </div>
-        {(!featured || featured.length === 0) && (
+        {(!showcase || showcase.length === 0) && (
           <p className="mt-6 text-sm text-zinc-500">
-            Start the API and run the seed script to see sample products. See README for setup.
+            No active products yet. When vendors add listings (and are approved), they appear here automatically.
           </p>
         )}
       </section>

@@ -102,7 +102,7 @@ export function AuthModalHost() {
             </div>
             <button
               type="submit"
-              className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
+              className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-neutral-950"
             >
               Continue
             </button>
@@ -187,7 +187,7 @@ export function AuthModalHost() {
             </div>
             <button
               type="submit"
-              className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
+              className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-neutral-950"
             >
               Register
             </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
@@ -20,15 +20,15 @@ export function ReviewSection({ productId }: { productId: string }) {
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     apiFetch<Review[]>(`/reviews/product/${productId}`)
       .then(setReviews)
       .catch(() => {});
-  };
+  }, [productId]);
 
   useEffect(() => {
     load();
-  }, [productId]);
+  }, [load]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +79,7 @@ export function ReviewSection({ productId }: { productId: string }) {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
+            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-amber-100 dark:bg-amber-600 dark:text-neutral-950"
           >
             Submit review
           </button>

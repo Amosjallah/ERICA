@@ -5,6 +5,7 @@ import { optionalAuth, protect, allowRoles } from '../middleware/auth.js';
 import { loadVendor, requireApprovedVendor } from '../middleware/vendor.js';
 import { upload } from '../middleware/upload.js';
 import { toLegacy } from '../utils/legacy.js';
+import { parsePagination } from '../utils/pagination.js';
 import { newId } from '../lib/ids.js';
 
 const router = express.Router();
@@ -14,7 +15,11 @@ function nowIso() {
 }
 
 function escapeIlike(s) {
-  return String(s).replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+  return String(s)
+    .replace(/\\/g, '\\\\')
+    .replace(/%/g, '\\%')
+    .replace(/_/g, '\\_')
+    .replace(/,/g, ' ');
 }
 
 router.get('/', optionalAuth, async (req, res) => {
@@ -26,17 +31,16 @@ router.get('/', optionalAuth, async (req, res) => {
     maxPrice,
     featured,
     sort = 'newest',
-    page = 1,
-    limit = 12,
   } = req.query;
 
   const sb = getSupabase();
   const { data: approvedVendors } = await sb.from('Vendor').select('id').eq('approvalStatus', 'approved');
   const vendorIds = (approvedVendors || []).map((v) => v.id);
+  const { page: pageNum, limit: lim, skip } = parsePagination(req.query, 12, 48);
   if (!vendorIds.length) {
     return res.json({
       products: [],
-      pagination: { total: 0, page: Number(page), limit: 12, pages: 0 },
+      pagination: { total: 0, page: pageNum, limit: lim, pages: 0 },
     });
   }
 
@@ -56,9 +60,6 @@ router.get('/', optionalAuth, async (req, res) => {
     vendorId = bySlug?.id || byId?.id || null;
   }
 
-  const skip = (Math.max(1, Number(page)) - 1) * Math.min(48, Math.max(1, Number(limit)));
-  const lim = Math.min(48, Math.max(1, Number(limit)));
-
   let query = sb
     .from('Product')
     .select('*, Vendor(storeName, slug, logo, approvalStatus), Category(name, slug)', { count: 'exact' })
@@ -68,8 +69,10 @@ router.get('/', optionalAuth, async (req, res) => {
   if (categoryId) query = query.eq('categoryId', categoryId);
   if (vendorId) query = query.eq('vendorId', vendorId);
   if (featured === 'true') query = query.eq('featured', true);
-  if (minPrice != null) query = query.gte('price', Number(minPrice));
-  if (maxPrice != null) query = query.lte('price', Number(maxPrice));
+  const minP = Number(minPrice);
+  if (minPrice != null && minPrice !== '' && Number.isFinite(minP)) query = query.gte('price', minP);
+  const maxP = Number(maxPrice);
+  if (maxPrice != null && maxPrice !== '' && Number.isFinite(maxP)) query = query.lte('price', maxP);
   if (q?.trim()) {
     const pat = `%${escapeIlike(q.trim())}%`;
     query = query.or(`title.ilike.${pat},description.ilike.${pat}`);
@@ -102,7 +105,42 @@ router.get('/', optionalAuth, async (req, res) => {
 
   res.json({
     products: mapped,
-    pagination: { total, page: Number(page), limit: lim, pages: Math.ceil(total / lim) },
+    pagination: { total, page: pageNum, limit: lim, pages: lim > 0 ? Math.ceil(total / lim) : 0 },
+  });
+});
+
+router.get('/mine', protect, allowRoles('vendor'), loadVendor, async (req, res) => {
+  const v = req.vendorProfile;
+  if (!v) return res.status(403).json({ message: 'Vendor only' });
+  const { q, category, active } = req.query;
+  const sb = getSupabase();
+  const { page: pageNum, limit: lim, skip } = parsePagination(req.query, 24, 100);
+
+  let query = sb
+    .from('Product')
+    .select('*, Category(name, slug)', { count: 'exact' })
+    .eq('vendorId', v._id)
+    .order('createdAt', { ascending: false });
+
+  if (category) query = query.eq('categoryId', String(category));
+  if (active === 'true') query = query.eq('active', true);
+  if (active === 'false') query = query.eq('active', false);
+  if (q?.trim()) {
+    const pat = `%${escapeIlike(q.trim())}%`;
+    query = query.or(`title.ilike.${pat},description.ilike.${pat}`);
+  }
+  query = query.range(skip, skip + lim - 1);
+
+  const { data: items, error, count } = await query;
+  if (error) return res.status(500).json({ message: error.message });
+  const mapped = (items || []).map((p) => {
+    const row = { ...p, category: p.Category };
+    delete row.Category;
+    return toLegacy(row);
+  });
+  res.json({
+    products: mapped,
+    pagination: { total: count ?? 0, page: pageNum, limit: lim, pages: lim > 0 ? Math.ceil((count ?? 0) / lim) : 0 },
   });
 });
 

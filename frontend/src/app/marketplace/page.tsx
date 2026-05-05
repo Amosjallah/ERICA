@@ -1,14 +1,17 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ProductCard } from "@/components/product-card";
 import { SITE_NAME_SHORT } from "@/lib/site";
-
-const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { getApiBase } from "@/lib/api";
+import { fetchApiOk } from "@/lib/server-fetch";
+import { STOCK_IMAGES } from "@/lib/stock-images";
 
 export default async function MarketplacePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const api = getApiBase();
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
   const category = typeof sp.category === "string" ? sp.category : "";
@@ -20,9 +23,16 @@ export default async function MarketplacePage({
   qs.set("sort", sort);
   qs.set("limit", "24");
 
-  const res = await fetch(`${api}/products?${qs.toString()}`, { next: { revalidate: 15 } });
-  const data = res.ok ? await res.json() : { products: [] };
-  const products = data.products || [];
+  const res = await fetchApiOk(`${api}/products?${qs.toString()}`, { next: { revalidate: 15 } });
+  let products: never[] = [];
+  if (res?.ok) {
+    try {
+      const data = (await res.json()) as { products?: unknown };
+      products = (Array.isArray(data.products) ? data.products : []) as never[];
+    } catch {
+      products = [];
+    }
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
@@ -61,7 +71,21 @@ export default async function MarketplacePage({
             ))}
           </div>
           {products.length === 0 && (
-            <p className="mt-10 text-sm text-zinc-500">No products match your filters.</p>
+            <div className="mt-10 flex flex-col items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 p-8 text-center dark:border-zinc-700 dark:bg-zinc-900/40">
+              <div className="relative h-40 w-full max-w-md overflow-hidden rounded-xl">
+                <Image
+                  src={STOCK_IMAGES.marketplaceEmpty}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 448px) 100vw, 448px"
+                />
+              </div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">No products match your filters.</p>
+              <Link href="/marketplace" className="text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400">
+                Clear filters
+              </Link>
+            </div>
           )}
         </div>
       </div>

@@ -6,7 +6,7 @@ export const SITE_DESCRIPTION =
   "Multi-vendor campus marketplace — discover shops on KTU E-Market and browse trusted sellers.";
 export const SUPPORT_EMAIL = "emarket@ktu.edu.gh";
 
-/** Brand artwork (PNG with dark background) — `public/ktu-e-market-brand.png` */
-export const LOGO_BRAND_SRC = "/ktu-e-market-brand.png";
+/** Brand artwork — `public/ktu-e-market-brand.svg` (vector wordmark on dark panel). */
+export const LOGO_BRAND_SRC = "/ktu-e-market-brand.svg";
 export const LOGO_BRAND_WIDTH = 480;
 export const LOGO_BRAND_HEIGHT = 160;

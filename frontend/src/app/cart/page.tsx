@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { apiFetch, getPublicOrigin } from "@/lib/api";
+import { productImageUnoptimized } from "@/lib/image-url";
 import { SITE_NAME_SHORT } from "@/lib/site";
+import { STOCK_IMAGES } from "@/lib/stock-images";
 import Image from "next/image";
 
 type CartItem = {
@@ -23,7 +25,7 @@ export default function CartPage() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!user || !token) {
       setLoading(false);
       return;
@@ -32,11 +34,11 @@ export default function CartPage() {
       .then((c) => setItems(c.items || []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  };
+  }, [user, token]);
 
   useEffect(() => {
     load();
-  }, [user, token]);
+  }, [load]);
 
   const subtotal = items.reduce((s, i) => s + i.product.price * i.quantity, 0);
 
@@ -83,7 +85,7 @@ export default function CartPage() {
               className="flex gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
             >
               <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-zinc-100">
-                <Image src={src} alt="" fill className="object-cover" unoptimized={src.includes("localhost")} />
+                <Image src={src} alt="" fill className="object-cover" sizes="96px" unoptimized={productImageUnoptimized(src)} />
               </div>
               <div className="flex-1">
                 <p className="font-medium text-zinc-900 dark:text-white">{line.product.title}</p>
@@ -112,13 +114,23 @@ export default function CartPage() {
           );
         })}
       </div>
-      {items.length === 0 && <p className="mt-8 text-sm text-zinc-500">Your cart is empty.</p>}
+      {items.length === 0 && (
+        <div className="mt-8 flex flex-col items-center gap-4 rounded-2xl border border-zinc-200 bg-zinc-50/80 p-8 text-center dark:border-zinc-800 dark:bg-zinc-900/40">
+          <div className="relative h-44 w-full max-w-sm overflow-hidden rounded-xl">
+            <Image src={STOCK_IMAGES.cartEmpty} alt="" fill className="object-cover" sizes="384px" />
+          </div>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">Your cart is empty.</p>
+          <Link href="/marketplace" className="text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400">
+            Browse marketplace
+          </Link>
+        </div>
+      )}
       {items.length > 0 && (
         <div className="mt-8 flex items-center justify-between border-t border-zinc-200 pt-6 dark:border-zinc-800">
           <p className="text-lg font-semibold">Subtotal: ${subtotal.toFixed(2)}</p>
           <Link
             href="/checkout"
-            className="rounded-lg bg-zinc-900 px-6 py-3 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
+            className="rounded-lg bg-zinc-900 px-6 py-3 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-neutral-950"
           >
             Checkout
           </Link>

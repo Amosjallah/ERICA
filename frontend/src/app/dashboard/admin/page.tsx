@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { SITE_NAME_SHORT } from "@/lib/site";
 
@@ -26,15 +27,15 @@ export default function AdminDashboard() {
   const [data, setData] = useState<Analytics | null>(null);
   const [pending, setPending] = useState<VendorRow[]>([]);
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!token) return;
     apiFetch<Analytics>("/admin/analytics", { token }).then(setData).catch(() => {});
     apiFetch<VendorRow[]>("/admin/pending-vendors", { token }).then(setPending).catch(() => {});
-  };
+  }, [token]);
 
   useEffect(() => {
     load();
-  }, [token]);
+  }, [load]);
 
   const approve = async (id: string, status: "approved" | "rejected") => {
     await apiFetch(`/admin/vendors/${id}`, {
@@ -45,8 +46,30 @@ export default function AdminDashboard() {
     load();
   };
 
-  if (!user || user.role !== "admin") {
-    return <p className="px-4 py-12 text-center">Admin only.</p>;
+  if (!user) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <p className="text-zinc-600 dark:text-zinc-400">Sign in with a platform admin account.</p>
+        <Link
+          href="/admin/login"
+          className="mt-4 inline-block rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-neutral-950"
+        >
+          Admin sign-in
+        </Link>
+      </div>
+    );
+  }
+
+  if (user.role !== "admin") {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <p className="text-zinc-600 dark:text-zinc-400">This area is for platform administrators only.</p>
+        <p className="mt-2 text-sm text-zinc-500">You are signed in as {user.role}.</p>
+        <Link href="/admin/login" className="mt-4 inline-block text-sm font-medium text-amber-700 hover:underline dark:text-amber-400">
+          Use admin sign-in
+        </Link>
+      </div>
+    );
   }
 
   return (

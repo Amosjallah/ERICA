@@ -29,6 +29,32 @@ async function fetchOrderFull(sb, orderId) {
   return normalizeOrder(order);
 }
 
+router.get('/vendor/order/:orderId', protect, allowRoles('vendor'), loadVendor, async (req, res) => {
+  if (!req.vendorProfile) return res.status(404).json({ message: 'Vendor not found' });
+  const sb = getSupabase();
+  const { data: order, error } = await sb
+    .from('Order')
+    .select(
+      `
+      *,
+      User(name, email, phone),
+      OrderSuborder(
+        *,
+        OrderLineItem(*)
+      )
+    `
+    )
+    .eq('id', req.params.orderId)
+    .maybeSingle();
+  if (error) return res.status(500).json({ message: error.message });
+  if (!order) return res.status(404).json({ message: 'Not found' });
+  const subs = order.OrderSuborder || [];
+  if (!subs.some((s) => s.vendorId === req.vendorProfile._id)) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+  res.json(formatOrderResponse(normalizeOrder(order)));
+});
+
 router.get('/my', protect, async (req, res) => {
   const sb = getSupabase();
   const { data: orders, error } = await sb
@@ -50,6 +76,22 @@ router.get('/my', protect, async (req, res) => {
   res.json((orders || []).map((o) => formatOrderResponse(normalizeOrder(o))));
 });
 
+/** Customer (or admin) single order with line items — for /orders/[id] */
+router.get('/my/:orderId', protect, async (req, res) => {
+  try {
+    const order = await fetchOrderFull(getSupabase(), req.params.orderId);
+    if (!order) return res.status(404).json({ message: 'Not found' });
+    if (String(order.userId) !== String(req.user._id) && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const formatted = formatOrderResponse(order);
+    if (!formatted) return res.status(404).json({ message: 'Not found' });
+    res.json(formatted);
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Server error' });
+  }
+});
+
 router.get('/number/:orderNumber', protect, async (req, res) => {
   const sb = getSupabase();
   const { data: order, error } = await sb
@@ -69,7 +111,7 @@ router.get('/number/:orderNumber', protect, async (req, res) => {
   if (error) return res.status(500).json({ message: error.message });
   if (!order) return res.status(404).json({ message: 'Not found' });
   const o = normalizeOrder(order);
-  if (o.userId !== req.user._id && req.user.role !== 'admin') {
+  if (String(o.userId) !== String(req.user._id) && req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Forbidden' });
   }
   res.json(formatOrderResponse(o));

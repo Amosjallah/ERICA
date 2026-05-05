@@ -3,9 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductActions } from "./product-actions";
 import { ReviewSection } from "./review-section";
-import { getPublicOrigin } from "@/lib/api";
-
-const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { getApiBase, getPublicOrigin } from "@/lib/api";
+import { productImageUnoptimized } from "@/lib/image-url";
+import { fetchApiOk } from "@/lib/server-fetch";
 
 export default async function ProductPage({
   params,
@@ -13,9 +13,25 @@ export default async function ProductPage({
   params: Promise<{ vendorSlug: string; productSlug: string }>;
 }) {
   const { vendorSlug, productSlug } = await params;
-  const res = await fetch(`${api}/products/${vendorSlug}/${productSlug}`, { next: { revalidate: 30 } });
-  if (!res.ok) notFound();
-  const product = await res.json();
+  const api = getApiBase();
+  const res = await fetchApiOk(`${api}/products/${vendorSlug}/${productSlug}`, { next: { revalidate: 30 } });
+  if (!res?.ok) notFound();
+  let product: {
+    _id: string;
+    title: string;
+    price: number;
+    compareAtPrice?: number | null;
+    description?: string;
+    stock?: number;
+    images?: string[];
+    vendor?: { _id?: string; slug?: string; storeName?: string };
+  };
+  try {
+    product = await res.json();
+  } catch {
+    notFound();
+  }
+  if (!product?._id || !product.title || !product.vendor?._id) notFound();
   const img = product.images?.[0];
   const src = img ? `${getPublicOrigin()}${img}` : "/placeholder-product.svg";
 
@@ -28,7 +44,7 @@ export default async function ProductPage({
             alt={product.title}
             fill
             className="object-contain p-4"
-            unoptimized={src.includes("localhost") || src.endsWith(".svg")}
+            unoptimized={productImageUnoptimized(src)}
             priority
           />
         </div>
@@ -43,7 +59,8 @@ export default async function ProductPage({
           </h1>
           <div className="mt-4 flex items-baseline gap-3">
             <span className="text-2xl font-semibold">${Number(product.price).toFixed(2)}</span>
-            {product.compareAtPrice > product.price && (
+            {product.compareAtPrice != null &&
+              Number(product.compareAtPrice) > Number(product.price) && (
               <span className="text-lg text-zinc-400 line-through">
                 ${Number(product.compareAtPrice).toFixed(2)}
               </span>
@@ -56,8 +73,8 @@ export default async function ProductPage({
           <div className="mt-8">
             <ProductActions
               productId={product._id}
-              vendorId={product.vendor?._id}
-              stock={product.stock}
+              vendorId={product.vendor._id}
+              stock={product.stock ?? 0}
             />
           </div>
         </div>

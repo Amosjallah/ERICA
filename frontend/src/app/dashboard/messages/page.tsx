@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { apiFetch } from "@/lib/api";
@@ -13,23 +13,33 @@ type Msg = { _id: string; body: string; sender: { name?: string }; createdAt: st
 function MessagesInner() {
   const params = useSearchParams();
   const vendorPref = params.get("vendor");
-  const { user, token } = useAuth();
+  const { user, token, vendor } = useAuth();
   const [threads, setThreads] = useState<{ conversationId: string; lastMessage: Msg }[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [body, setBody] = useState("");
   const [vendorId, setVendorId] = useState(vendorPref || "");
 
-  const loadThreads = () => {
+  useEffect(() => {
+    if (vendorPref) setVendorId(vendorPref);
+  }, [vendorPref]);
+
+  useEffect(() => {
+    if (user?.role === "vendor" && vendor?._id && !vendorPref) {
+      setVendorId(vendor._id);
+    }
+  }, [user?.role, vendor?._id, vendorPref]);
+
+  const loadThreads = useCallback(() => {
     if (!token) return;
     apiFetch<{ conversationId: string; lastMessage: Msg }[]>("/messages/conversations", { token }).then(
       setThreads
     );
-  };
+  }, [token]);
 
   useEffect(() => {
     loadThreads();
-  }, [token]);
+  }, [loadThreads]);
 
   useEffect(() => {
     if (!activeId || !token) return;
@@ -117,7 +127,7 @@ function MessagesInner() {
           />
           <button
             type="submit"
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
+            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-amber-100 dark:bg-amber-600 dark:text-neutral-950"
           >
             Send
           </button>

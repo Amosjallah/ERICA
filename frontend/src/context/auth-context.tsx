@@ -28,6 +28,8 @@ type AuthState = {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  /** Platform admin only — same as login but rejects non-admin accounts. */
+  adminLogin: (email: string, password: string) => Promise<void>;
   register: (payload: Record<string, unknown>) => Promise<void>;
   logout: () => void;
   refresh: () => Promise<void>;
@@ -69,9 +71,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   const login = async (email: string, password: string) => {
+    const em = email.trim();
     const data = await apiFetch<{ token: string; user: User }>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: em, password }),
+      token: null,
+    });
+    localStorage.setItem("token", data.token);
+    setToken(data.token);
+    setUser(data.user);
+    await refresh();
+  };
+
+  const adminLogin = async (email: string, password: string) => {
+    const em = email.trim();
+    const data = await apiFetch<{ token: string; user: User }>("/admin/login", {
+      method: "POST",
+      body: JSON.stringify({ email: em, password }),
       token: null,
     });
     localStorage.setItem("token", data.token);
@@ -81,9 +97,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (payload: Record<string, unknown>) => {
+    const body =
+      typeof payload.email === "string" ? { ...payload, email: payload.email.trim() } : payload;
     const data = await apiFetch<{ token: string; user: User }>("/auth/register", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
       token: null,
     });
     localStorage.setItem("token", data.token);
@@ -101,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, vendor, token, loading, login, register, logout, refresh }}
+      value={{ user, vendor, token, loading, login, adminLogin, register, logout, refresh }}
     >
       {children}
     </AuthContext.Provider>

@@ -10,7 +10,7 @@ type SiteLogoFullProps = {
   compact?: boolean;
 };
 
-/** Official brand mark — image from `public/ktu-e-market-brand.png` */
+/** Official brand mark — image from `public/ktu-e-market-brand.svg` */
 export function SiteLogoFull({ className, compact }: SiteLogoFullProps) {
   const imgClass = compact
     ? "h-9 w-auto max-w-[min(100%,260px)] sm:h-10"

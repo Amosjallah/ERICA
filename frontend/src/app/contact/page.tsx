@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { SUPPORT_EMAIL, SITE_NAME_SHORT } from "@/lib/site";
+import { STOCK_IMAGES } from "@/lib/stock-images";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -19,30 +21,45 @@ export default function ContactPage() {
         </p>
       </section>
 
-      <section className="mt-12 grid gap-6 sm:grid-cols-2">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="font-semibold text-zinc-900 dark:text-white">Email</h2>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Best for orders, account issues, and general inquiries.</p>
-          <a href={`mailto:${SUPPORT_EMAIL}`} className="mt-4 inline-block text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400">
-            {SUPPORT_EMAIL}
-          </a>
+      <section className="mt-12 grid gap-8 lg:grid-cols-2 lg:items-start">
+        <div className="relative aspect-[4/3] min-h-[220px] overflow-hidden rounded-2xl border border-zinc-200 shadow-sm dark:border-zinc-800 lg:order-2">
+          <Image
+            src={STOCK_IMAGES.contactHero}
+            alt="Support and workspace"
+            fill
+            className="object-cover"
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            priority
+          />
         </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="font-semibold text-zinc-900 dark:text-white">Phone</h2>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Campus support line (demo placeholder).</p>
-          <p className="mt-4 font-mono text-sm text-zinc-800 dark:text-zinc-200">+233 (0) 555 010 900</p>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="font-semibold text-zinc-900 dark:text-white">Hours</h2>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Monday–Friday, 9:00–18:00 local time.</p>
-          <p className="mt-4 text-sm text-zinc-700 dark:text-zinc-300">Emergency escalations: email with “URGENT” in the subject.</p>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="font-semibold text-zinc-900 dark:text-white">Campus desk</h2>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Visit during orientation weeks for in-person vendor sign-up help (schedule varies by semester).
-          </p>
-          <p className="mt-4 text-sm italic text-zinc-500">Location TBA — check university bulletin.</p>
+        <div className="grid gap-6 sm:grid-cols-2 lg:order-1 lg:grid-cols-2">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 className="font-semibold text-zinc-900 dark:text-white">Email</h2>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Best for orders, account issues, and general inquiries.</p>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="mt-4 inline-block text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400"
+            >
+              {SUPPORT_EMAIL}
+            </a>
+          </div>
+          <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 className="font-semibold text-zinc-900 dark:text-white">Phone</h2>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Campus support line (demo placeholder).</p>
+            <p className="mt-4 font-mono text-sm text-zinc-800 dark:text-zinc-200">+233 (0) 555 010 900</p>
+          </div>
+          <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 className="font-semibold text-zinc-900 dark:text-white">Hours</h2>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Monday–Friday, 9:00–18:00 local time.</p>
+            <p className="mt-4 text-sm text-zinc-700 dark:text-zinc-300">Emergency escalations: email with “URGENT” in the subject.</p>
+          </div>
+          <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 className="font-semibold text-zinc-900 dark:text-white">Campus desk</h2>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              Visit during orientation weeks for in-person vendor sign-up help (schedule varies by semester).
+            </p>
+            <p className="mt-4 text-sm italic text-zinc-500">Location TBA — check university bulletin.</p>
+          </div>
         </div>
       </section>
 
@@ -95,7 +112,7 @@ export default function ContactPage() {
           Browse the marketplace, read about us, or open the shops directory while you wait for a reply.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
-          <Link href="/marketplace" className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-amber-100 dark:bg-amber-500 dark:text-zinc-900">
+          <Link href="/marketplace" className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-amber-100 dark:bg-amber-500 dark:text-neutral-950">
             Marketplace
           </Link>
           <Link href="/about" className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold dark:border-zinc-600">

@@ -41,7 +41,7 @@ export default function CheckoutSuccessInner() {
       )}
       <Link
         href="/dashboard"
-        className="mt-8 inline-block rounded-lg bg-zinc-900 px-6 py-3 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
+        className="mt-8 inline-block rounded-lg bg-zinc-900 px-6 py-3 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-neutral-950"
       >
         View orders
       </Link>

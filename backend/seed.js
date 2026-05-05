@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './src/load-env.js';
 import bcrypt from 'bcryptjs';
 import { getSupabase } from './src/lib/supabase.js';
 import { newId } from './src/lib/ids.js';

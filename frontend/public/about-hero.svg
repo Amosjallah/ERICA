@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="about-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a4e7a"/>
+      <stop offset="55%" stop-color="#20527d"/>
+      <stop offset="100%" stop-color="#143d5f"/>
+    </linearGradient>
+    <linearGradient id="about-glow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#e87a24" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#e87a24" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#about-bg)"/>
+  <ellipse cx="900" cy="120" rx="280" ry="160" fill="url(#about-glow)"/>
+  <ellipse cx="220" cy="320" rx="200" ry="120" fill="#e87a24" opacity="0.12"/>
+  <g fill="#ffffff" opacity="0.08">
+    <rect x="80" y="100" width="120" height="8" rx="4"/>
+    <rect x="80" y="130" width="200" height="8" rx="4"/>
+    <rect x="80" y="160" width="160" height="8" rx="4"/>
+  </g>
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.15" stroke-width="2">
+    <circle cx="420" cy="200" r="72"/>
+    <circle cx="420" cy="200" r="48"/>
+  </g>
+</svg>

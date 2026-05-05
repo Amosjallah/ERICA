@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE_NAME, SITE_NAME_SHORT } from "@/lib/site";
+import { STOCK_IMAGES } from "@/lib/stock-images";
 
 export const metadata: Metadata = {
   title: "About us",
@@ -16,6 +17,17 @@ export default function AboutPage() {
         {SITE_NAME_SHORT} is a campus-focused multi-vendor marketplace built to connect students, staff, and local sellers in one
         trusted platform.
       </p>
+
+      <div className="relative mt-10 h-48 w-full overflow-hidden rounded-2xl border border-zinc-200 shadow-sm sm:h-56 md:h-64 dark:border-zinc-800">
+        <img
+          src={STOCK_IMAGES.aboutMission}
+          alt="Campus marketplace hero"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          width={1200}
+          height={400}
+          fetchPriority="high"
+        />
+      </div>
 
       <section className="mt-14 border-t border-zinc-200 pt-12 dark:border-zinc-800">
         <h2 className="font-serif text-2xl font-semibold text-zinc-900 dark:text-white">Our mission</h2>
@@ -55,7 +67,7 @@ export default function AboutPage() {
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/marketplace"
-            className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
+            className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-amber-100 dark:bg-amber-600 dark:text-neutral-950"
           >
             Browse marketplace
           </Link>

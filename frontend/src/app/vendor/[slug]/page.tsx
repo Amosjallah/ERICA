@@ -2,17 +2,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/product-card";
-import { getPublicOrigin } from "@/lib/api";
+import { getApiBase, getPublicOrigin } from "@/lib/api";
+import { isLoopbackImageUrl } from "@/lib/image-url";
 import { SITE_NAME_SHORT } from "@/lib/site";
-
-const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { fetchApiOk } from "@/lib/server-fetch";
 
 export default async function VendorStorePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const res = await fetch(`${api}/vendors/store/${slug}`, { next: { revalidate: 30 } });
-  if (!res.ok) notFound();
-  const data = await res.json();
+  const api = getApiBase();
+  const res = await fetchApiOk(`${api}/vendors/store/${slug}`, { next: { revalidate: 30 } });
+  if (!res?.ok) notFound();
+  let data: { vendor?: { storeName?: string; description?: string; banner?: string | null; slug?: string }; products?: unknown[] };
+  try {
+    data = await res.json();
+  } catch {
+    notFound();
+  }
   const { vendor, products } = data;
+  if (!vendor?.storeName) notFound();
   const origin = getPublicOrigin();
   const banner =
     vendor.banner && typeof vendor.banner === "string"
@@ -45,7 +52,7 @@ export default async function VendorStorePage({ params }: { params: Promise<{ sl
               className="object-cover"
               sizes="100vw"
               priority
-              unoptimized={banner.startsWith("http://localhost") || banner.startsWith("http://127.0.0.1")}
+              unoptimized={isLoopbackImageUrl(banner)}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent" />
             <div className="absolute bottom-4 left-6 right-6">
@@ -71,11 +78,11 @@ export default async function VendorStorePage({ params }: { params: Promise<{ sl
         )}
       </div>
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {(products || []).map((p: never) => (
+        {(Array.isArray(products) ? products : []).map((p) => (
           <ProductCard key={(p as { _id: string })._id} product={p as never} />
         ))}
       </div>
-      {(products || []).length === 0 && (
+      {(!Array.isArray(products) || products.length === 0) && (
         <p className="mt-8 text-sm text-zinc-500">This store has no products yet.</p>
       )}
       <p className="mt-8 flex flex-wrap gap-4 text-sm">

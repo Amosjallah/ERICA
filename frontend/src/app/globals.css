@@ -5,6 +5,14 @@
   --foreground: #0a0a0a;
   --gold: #c9a962;
   --gold-muted: #e8d5a3;
+  /* KTU crest — navy ring / orange gear (reference palette) */
+  --ktu-navy: #1a4e7a;
+  --ktu-navy-deep: #0f304d;
+  --ktu-navy-hover: #235a86;
+  --ktu-orange: #e87a24;
+  /* System stacks — no build-time Google Fonts fetch (works offline / strict CI / OneDrive builds). */
+  --font-dm-sans: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-playfair: ui-serif, Georgia, "Palatino Linotype", "Book Antiqua", Palatino, serif;
 }
 
 @theme inline {
@@ -12,6 +20,24 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-dm-sans);
   --font-serif: var(--font-playfair);
+
+  /* Map `amber-*` utilities to KTU orange (existing components keep class names). */
+  --color-amber-50: #fff8f3;
+  --color-amber-100: #ffe8d4;
+  --color-amber-200: #ffd0a8;
+  --color-amber-300: #ffb070;
+  --color-amber-400: #f5933d;
+  --color-amber-500: #e87a24;
+  --color-amber-600: #cf6a1c;
+  --color-amber-700: #a55616;
+  --color-amber-800: #7a4010;
+  --color-amber-900: #4d280a;
+  --color-amber-950: #1a0e04;
+
+  /* Navy chrome for `zinc-800`–`950` (headings, primary surfaces, hovers). Lighter zinc stays neutral. */
+  --color-zinc-800: var(--ktu-navy-hover);
+  --color-zinc-900: var(--ktu-navy);
+  --color-zinc-950: var(--ktu-navy-deep);
 }
 
 @media (prefers-color-scheme: dark) {

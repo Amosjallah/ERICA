@@ -60,7 +60,7 @@ export function Navbar() {
             />
             <button
               type="submit"
-              className="shrink-0 bg-zinc-900 px-4 py-2 text-sm font-medium text-amber-100 transition hover:bg-zinc-800 dark:bg-amber-600 dark:text-zinc-900 dark:hover:bg-amber-500"
+              className="shrink-0 bg-zinc-900 px-4 py-2 text-sm font-medium text-amber-100 transition hover:bg-zinc-800 dark:bg-amber-600 dark:text-neutral-950 dark:hover:bg-amber-500"
             >
               Search
             </button>
@@ -132,7 +132,7 @@ export function Navbar() {
               </Link>
               <Link
                 href="/?auth=register"
-                className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-amber-100 dark:bg-amber-600 dark:text-zinc-900"
+                className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-amber-100 dark:bg-amber-600 dark:text-neutral-950"
               >
                 Join
               </Link>
